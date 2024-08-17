@@ -14,64 +14,33 @@ Cursor Lens is an open-source tool designed to provide insights into AI-assisted
 
 ## Technology Stack
 
-- **Frontend**: Next.js with React
-- **Backend**: Node.js with FastAPI
+- **Frontend/Backend**: Next.js with React
 - **Database**: PostgreSQL with Prisma ORM
-- **Analytics**: Recharts for data visualization
+- **AI Library**: Vercel AI SDK
 - **Styling**: Tailwind CSS with shadcn/ui components
 
 ## Getting Started
+
+For detailed installation instructions, please refer to our [Installation Guide](https://www.cursorlens.com/docs/getting-started/installation).
 
 ### Prerequisites
 
 - Node.js (v14 or later)
 - pnpm
 - PostgreSQL
+- ngrok
 
-### Installation
+### Quick Installation Steps
 
-1. Clone the repository:
+1. Clone the repository
+2. Install dependencies with `pnpm install`
+3. Set up environment variables
+4. Set up the database with `pnpm prisma migrate dev`
+5. Build the project with `pnpm build`
+6. Set up ngrok
+7. Configure Cursor to use your ngrok URL as the API endpoint
 
-   ```
-   git clone https://github.com/HamedMP/CursorLens.git
-   cd CursorLens
-   ```
-
-2. Install dependencies:
-
-   ```
-   pnpm install
-   ```
-
-3. Set up environment variables:
-   Create a `.env` file in the root directory and add the following:
-
-   ```
-   DATABASE_URL="postgresql://username:password@localhost:5432/cursorlens"
-   OPENAI_API_KEY="your_openai_api_key"
-   ANTHROPIC_API_KEY="your_anthropic_api_key"
-   ```
-
-4. Set up the database:
-
-   ```
-   pnpm prisma migrate dev
-   ```
-
-5. Build the project:
-   ```
-   pnpm build
-   ```
-
-### Running the Application
-
-1. Start the development server:
-
-   ```
-   pnpm dev
-   ```
-
-2. Open [http://localhost:3000](http://localhost:3000) in your browser.
+For full details on each step, please see the [Installation Guide](https://www.cursorlens.com/docs/getting-started/installation).
 
 ## Usage
 
@@ -87,17 +56,11 @@ We welcome contributions to Cursor Lens! Please see our [Contributing Guide](CON
 
 Cursor Lens is licensed under the GNU Affero General Public License v3.0 (AGPL-3.0). See the [LICENSE](LICENSE) file for details.
 
-This means that if you modify Cursor Lens and use it as part of a hosted service, you must make your modified version available under the AGPL-3.0 license.
-
-## Acknowledgments
-
-- The Cursor.sh team for their innovative AI-assisted coding tool
-- OpenAI, Anthropic, and other AI providers for their powerful language models
-- The open-source community for their invaluable contributions
-
 ## Support
 
 If you encounter any issues or have questions, please file an issue on the GitHub repository or contact the maintainers directly.
+
+For more detailed information, please visit our [documentation](https://www.cursorlens.com/docs/getting-started/introduction).
 
 ---
 
