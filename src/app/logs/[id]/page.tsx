@@ -12,6 +12,8 @@ import * as themes from "react-syntax-highlighter/dist/esm/styles/prism";
 import { Button } from "@/components/ui/button";
 import { Copy } from "lucide-react";
 import { toast } from "sonner";
+import { ChevronDown, ChevronUp } from "lucide-react";
+import ReactMarkdown from "react-markdown";
 
 interface Log {
   id: number;
@@ -117,7 +119,14 @@ export default function LogDetails({ logId }: LogDetailsProps) {
     return obj;
   };
 
-  const JsonHighlight = ({ content }: { content: string | null }) => {
+  const JsonHighlight = ({
+    content,
+    isExpandable = false,
+  }: {
+    content: string | null;
+    isExpandable?: boolean;
+  }) => {
+    const [isExpanded, setIsExpanded] = useState(!isExpandable);
     const parsedContent = parseJSON(content);
     const maskedContent = maskSensitiveInfo(parsedContent);
     const jsonString =
@@ -126,6 +135,90 @@ export default function LogDetails({ logId }: LogDetailsProps) {
     const handleCopy = () => {
       navigator.clipboard.writeText(jsonString);
       toast.success("Copied to clipboard");
+    };
+
+    const toggleExpand = () => {
+      setIsExpanded(!isExpanded);
+    };
+
+    const renderAIResponse = (response: any) => {
+      return (
+        <div className="mb-4 rounded-lg bg-blue-100 p-4">
+          <p className="mb-2 font-bold">AI Response</p>
+          <ReactMarkdown
+            components={{
+              code({ node, inline, className, children, ...props }) {
+                const match = /language-(\w+)/.exec(className || "");
+                return !inline && match ? (
+                  <SyntaxHighlighter
+                    style={themes.tomorrow}
+                    language={match[1]}
+                    PreTag="div"
+                    {...props}
+                  >
+                    {String(children).replace(/\n$/, "")}
+                  </SyntaxHighlighter>
+                ) : (
+                  <code className={className} {...props}>
+                    {children}
+                  </code>
+                );
+              },
+            }}
+          >
+            {response.text}
+          </ReactMarkdown>
+        </div>
+      );
+    };
+
+    const renderMessages = (messages: any[]) => {
+      return messages
+        .slice()
+        .reverse()
+        .map((message, index) => (
+          <div
+            key={index}
+            className={`mb-4 rounded-lg p-4 ${
+              message.role === "user"
+                ? "bg-gray-100"
+                : message.role === "system"
+                  ? "bg-yellow-100"
+                  : "bg-blue-100"
+            }`}
+          >
+            <p className="mb-2 font-bold">
+              {message.role === "user"
+                ? "You"
+                : message.role === "system"
+                  ? "System"
+                  : "Assistant"}
+            </p>
+            <ReactMarkdown
+              components={{
+                code({ node, inline, className, children, ...props }) {
+                  const match = /language-(\w+)/.exec(className || "");
+                  return !inline && match ? (
+                    <SyntaxHighlighter
+                      style={themes.tomorrow}
+                      language={match[1]}
+                      PreTag="div"
+                      {...props}
+                    >
+                      {String(children).replace(/\n$/, "")}
+                    </SyntaxHighlighter>
+                  ) : (
+                    <code className={className} {...props}>
+                      {children}
+                    </code>
+                  );
+                },
+              }}
+            >
+              {message.content}
+            </ReactMarkdown>
+          </div>
+        ));
     };
 
     return (
@@ -138,18 +231,52 @@ export default function LogDetails({ logId }: LogDetailsProps) {
         >
           <Copy className="h-4 w-4" />
         </Button>
-        <SyntaxHighlighter
-          language="json"
-          style={themes.tomorrow}
-          customStyle={{
-            margin: 0,
-            padding: "1rem",
-            borderRadius: "0.25rem",
-            fontSize: "0.875rem",
-          }}
-        >
-          {jsonString}
-        </SyntaxHighlighter>
+        {isExpandable && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={toggleExpand}
+            className="mb-2"
+          >
+            {isExpanded ? (
+              <>
+                <ChevronUp className="mr-2 h-4 w-4" /> Hide JSON
+              </>
+            ) : (
+              <>
+                <ChevronDown className="mr-2 h-4 w-4" /> Show JSON
+              </>
+            )}
+          </Button>
+        )}
+        {parsedContent && parsedContent.text && (
+          <div className="mb-4">
+            <h4 className="mb-2 text-lg font-semibold">AI Response</h4>
+            {renderAIResponse(parsedContent)}
+          </div>
+        )}
+        {parsedContent && parsedContent.messages && (
+          <div className="mb-4">
+            <h4 className="mb-2 text-lg font-semibold">
+              Messages (Most recent on top)
+            </h4>
+            {renderMessages(parsedContent.messages)}
+          </div>
+        )}
+        {(isExpanded || !isExpandable) && (
+          <SyntaxHighlighter
+            language="json"
+            style={themes.tomorrow}
+            customStyle={{
+              margin: 0,
+              padding: "1rem",
+              borderRadius: "0.25rem",
+              fontSize: "0.875rem",
+            }}
+          >
+            {jsonString}
+          </SyntaxHighlighter>
+        )}
       </div>
     );
   };
@@ -170,7 +297,7 @@ export default function LogDetails({ logId }: LogDetailsProps) {
             <CardTitle className="text-base">Response</CardTitle>
           </CardHeader>
           <CardContent>
-            <JsonHighlight content={log.response} />
+            <JsonHighlight content={log.response} isExpandable={true} />
           </CardContent>
         </Card>
 
@@ -179,7 +306,7 @@ export default function LogDetails({ logId }: LogDetailsProps) {
             <CardTitle className="text-base">Body</CardTitle>
           </CardHeader>
           <CardContent>
-            <JsonHighlight content={log.body} />
+            <JsonHighlight content={log.body} isExpandable={true} />
           </CardContent>
         </Card>
 
