@@ -1,19 +1,19 @@
 "use client";
 
-import { useParams } from "next/navigation";
 import { useState, useEffect } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
-import { useSearchParams } from "next/navigation";
-import type { SyntaxHighlighterProps } from "react-syntax-highlighter";
+import {
+  Prism as SyntaxHighlighter,
+  SyntaxHighlighterProps,
+} from "react-syntax-highlighter";
 import * as themes from "react-syntax-highlighter/dist/esm/styles/prism";
 import { Button } from "@/components/ui/button";
-import { Copy } from "lucide-react";
-import { toast } from "sonner";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { Copy, ChevronDown, ChevronUp } from "lucide-react";
 import ReactMarkdown from "react-markdown";
+import { toast } from "sonner";
+import { useSearchParams } from "next/navigation";
 
 interface Log {
   id: number;

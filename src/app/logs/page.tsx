@@ -3,9 +3,9 @@
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { Calendar as CalendarIcon } from "lucide-react";
-import LogsList from "./LogsList";
-import LogDetails from "./[id]/page";
-import { getLogs, getStats } from "../actions";
+import LogsList from "@/components/LogsList";
+import LogDetails from "@/components/LogDetails";
+import { getLogs, getStats } from "@/app/actions";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,

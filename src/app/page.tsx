@@ -9,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import LogsList from "./logs/LogsList";
+import LogsList from "../components/LogsList";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Label } from "@/components/ui/label";
