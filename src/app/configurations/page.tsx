@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useMemo } from 'react';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { useState, useEffect, useMemo } from "react";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Table,
   TableBody,
@@ -12,21 +12,21 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
+} from "@/components/ui/table";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
-import { Switch } from '@/components/ui/switch';
-import { PlusIcon } from 'lucide-react';
+} from "@/components/ui/dialog";
+import { Switch } from "@/components/ui/switch";
+import { PlusIcon } from "lucide-react";
 import {
   getConfigurations,
   updateDefaultConfiguration,
   createConfiguration,
-} from '../actions';
+} from "../actions";
 
 interface AIConfiguration {
   id: string;
@@ -46,9 +46,9 @@ interface AIConfiguration {
 
 const configTemplates = [
   {
-    name: 'OpenAI GPT-3.5',
-    provider: 'openai',
-    model: 'gpt-3.5-turbo',
+    name: "OpenAI GPT-3.5",
+    provider: "openai",
+    model: "gpt-3.5-turbo",
     temperature: 0.7,
     maxTokens: 2048,
     topP: 1,
@@ -56,9 +56,9 @@ const configTemplates = [
     presencePenalty: 0,
   },
   {
-    name: 'OpenAI GPT-4',
-    provider: 'openai',
-    model: 'gpt-4',
+    name: "OpenAI GPT-4",
+    provider: "openai",
+    model: "gpt-4",
     temperature: 0.7,
     maxTokens: 8192,
     topP: 1,
@@ -66,9 +66,9 @@ const configTemplates = [
     presencePenalty: 0,
   },
   {
-    name: 'Anthropic Claude',
-    provider: 'anthropic',
-    model: 'claude-2',
+    name: "Anthropic Claude",
+    provider: "anthropic",
+    model: "claude-2",
     temperature: 0.7,
     maxTokens: 100000,
     topP: 1,
@@ -101,8 +101,8 @@ export default function ConfigurationsPage() {
       const configData = await getConfigurations();
       setConfigurations(configData as AIConfiguration[]);
     } catch (error) {
-      console.error('Error fetching configurations:', error);
-      setError('Error loading configurations');
+      console.error("Error fetching configurations:", error);
+      setError("Error loading configurations");
     }
   };
 
@@ -113,8 +113,8 @@ export default function ConfigurationsPage() {
       setNewConfig({});
       fetchConfigurations();
     } catch (error) {
-      console.error('Error creating configuration:', error);
-      setError('Error creating configuration');
+      console.error("Error creating configuration:", error);
+      setError("Error creating configuration");
     }
   };
 
@@ -123,8 +123,8 @@ export default function ConfigurationsPage() {
       await updateDefaultConfiguration(configId);
       fetchConfigurations();
     } catch (error) {
-      console.error('Error updating default configuration:', error);
-      setError('Error updating default configuration');
+      console.error("Error updating default configuration:", error);
+      setError("Error updating default configuration");
     }
   };
 
@@ -133,10 +133,10 @@ export default function ConfigurationsPage() {
   };
 
   return (
-    <div className='container mx-auto p-8'>
-      <h1 className='text-3xl font-bold mb-8'>AI Configurations</h1>
+    <div className="container mx-auto p-8">
+      <h1 className="mb-8 text-3xl font-bold">AI Configurations</h1>
 
-      <Card className='mb-8'>
+      <Card className="mb-8">
         <CardHeader>
           <CardTitle>Configuration List</CardTitle>
         </CardHeader>
@@ -178,63 +178,62 @@ export default function ConfigurationsPage() {
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogTrigger asChild>
           <Button onClick={() => setIsDialogOpen(true)}>
-            <PlusIcon className='h-4 w-4 mr-2' />
+            <PlusIcon className="mr-2 h-4 w-4" />
             Add Configuration
           </Button>
         </DialogTrigger>
-        <DialogContent className='sm:max-w-[425px]'>
+        <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>Add New Configuration</DialogTitle>
           </DialogHeader>
-          <div className='grid gap-4 py-4 max-h-[60vh] overflow-y-auto'>
-            <div className='grid grid-cols-4 items-center gap-4'>
-              <Label htmlFor='name' className='text-right'>
+          <div className="grid max-h-[60vh] gap-4 overflow-y-auto py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="name" className="text-right">
                 Name
               </Label>
               <Input
-                id='name'
-                value={newConfig.name || ''}
+                id="name"
+                value={newConfig.name || ""}
                 onChange={(e) =>
                   setNewConfig({ ...newConfig, name: e.target.value })
                 }
-                className='col-span-3'
+                className="col-span-3"
               />
             </div>
-            <div className='grid grid-cols-4 items-center gap-4'>
-              <Label htmlFor='provider' className='text-right'>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="provider" className="text-right">
                 Provider
               </Label>
               <Input
-                id='provider'
-                value={newConfig.provider || ''}
+                id="provider"
+                value={newConfig.provider || ""}
                 onChange={(e) =>
                   setNewConfig({ ...newConfig, provider: e.target.value })
                 }
-                className='col-span-3'
+                className="col-span-3"
               />
             </div>
-            <div className='grid grid-cols-4 items-center gap-4'>
-              <Label htmlFor='model' className='text-right'>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="model" className="text-right">
                 Model
               </Label>
               <Input
-                id='model'
-                value={newConfig.model || ''}
+                id="model"
+                value={newConfig.model || ""}
                 onChange={(e) =>
                   setNewConfig({ ...newConfig, model: e.target.value })
                 }
-                className='col-span-3'
+                className="col-span-3"
               />
             </div>
-            {/* Add more fields as needed */}
           </div>
-          <div className='mt-4'>
+          <div className="mt-4">
             <Label>Templates</Label>
-            <div className='flex flex-wrap gap-2 mt-2'>
+            <div className="mt-2 flex flex-wrap gap-2">
               {configTemplates.map((template, index) => (
                 <Button
                   key={index}
-                  variant='outline'
+                  variant="outline"
                   onClick={() => handleTemplateSelect(template)}
                 >
                   {template.name}
@@ -242,7 +241,7 @@ export default function ConfigurationsPage() {
               ))}
             </div>
           </div>
-          <div className='mt-4 flex justify-end'>
+          <div className="mt-4 flex justify-end">
             <Button onClick={handleCreateConfig}>Create Configuration</Button>
           </div>
         </DialogContent>

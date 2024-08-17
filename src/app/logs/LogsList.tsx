@@ -7,7 +7,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
-// Update the LogMetadata interface to match the one in actions.ts
 interface LogMetadata {
   topP: number;
   model: string;
@@ -17,7 +16,7 @@ interface LogMetadata {
   temperature: number;
   presencePenalty: number;
   frequencyPenalty: number;
-  userMessage?: string; // Add this line
+  userMessage?: string;
 }
 
 interface Log {
@@ -26,7 +25,7 @@ interface Log {
   url: string;
   timestamp: string;
   metadata: LogMetadata;
-  response: string; // Change this to string as it's parsed in the component
+  response: string;
 }
 
 interface LogsListProps {
@@ -57,7 +56,6 @@ const LogsListComponent: React.FC<LogsListProps> = ({
           console.error("Error parsing log response:", error);
         }
 
-        // Extract user message from the log (it might be in a different location)
         const userMessage =
           log.metadata.userMessage || log.url || "No message available";
 
