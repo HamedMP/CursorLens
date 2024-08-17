@@ -8,35 +8,70 @@ function serializeDates<T>(obj: T): T {
   return JSON.parse(JSON.stringify(obj));
 }
 
-export async function getLogs(): Promise<Partial<Log>[]> {
+// Add the metadata type definition
+type LogMetadata = {
+  topP: number;
+  model: string;
+  configId: string;
+  provider: string;
+  maxTokens: number;
+  temperature: number;
+  presencePenalty: number;
+  frequencyPenalty: number;
+};
+
+export async function getLogs({
+  provider = "all",
+  startDate = "",
+  endDate = "",
+}: { provider?: string; startDate?: string; endDate?: string } = {}) {
   try {
-    const logs = await prisma.log.findMany({
+    let query: any = {
       orderBy: {
         timestamp: "desc",
       },
-      select: {
-        id: true,
-        method: true,
-        url: true,
-        timestamp: true,
-        metadata: true,
-        response: true,
-      },
-    });
+    };
 
+    if (provider !== "all") {
+      query.where = {
+        ...query.where,
+        metadata: {
+          path: ["provider"],
+          equals: provider,
+        },
+      };
+    }
+
+    if (startDate) {
+      query.where = {
+        ...query.where,
+        timestamp: {
+          ...query.where?.timestamp,
+          gte: new Date(startDate),
+        },
+      };
+    }
+
+    if (endDate) {
+      query.where = {
+        ...query.where,
+        timestamp: {
+          ...query.where?.timestamp,
+          lte: new Date(endDate),
+        },
+      };
+    }
+
+    const logs = await prisma.log.findMany(query);
+
+    // Cast the metadata to the correct type
     return logs.map((log) => ({
       ...log,
-      metadata: {
-        model: (log.metadata as any).model || "",
-        userMessage: (log.metadata as any).userMessage || "",
-      },
-      response: {
-        totalTokens: JSON.parse(log.response)?.usage?.totalTokens || 0,
-      },
+      metadata: log.metadata as LogMetadata,
     }));
   } catch (error) {
     console.error("Error fetching logs:", error);
-    throw new Error("Failed to fetch logs");
+    throw error;
   }
 }
 

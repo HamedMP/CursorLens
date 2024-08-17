@@ -7,18 +7,26 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
+// Update the LogMetadata interface to match the one in actions.ts
+interface LogMetadata {
+  topP: number;
+  model: string;
+  configId: string;
+  provider: string;
+  maxTokens: number;
+  temperature: number;
+  presencePenalty: number;
+  frequencyPenalty: number;
+  userMessage?: string; // Add this line
+}
+
 interface Log {
   id: string;
   method: string;
   url: string;
   timestamp: string;
-  metadata: {
-    model: string;
-    userMessage: string;
-  };
-  response: {
-    totalTokens: number;
-  };
+  metadata: LogMetadata;
+  response: string; // Change this to string as it's parsed in the component
 }
 
 interface LogsListProps {
@@ -39,29 +47,44 @@ const LogsListComponent: React.FC<LogsListProps> = ({
 
   return (
     <ul className="space-y-2">
-      {logs.map((log) => (
-        <li
-          key={log.id}
-          className={`cursor-pointer rounded p-2 ${
-            selectedLogId === log.id
-              ? "border border-accent-foreground bg-accent"
-              : "hover:bg-secondary"
-          }`}
-          onClick={() => onLogSelect(log.id)}
-        >
-          <div className="font-semibold text-foreground">
-            {new Date(log.timestamp).toLocaleString()} - {log.method}
-          </div>
-          <div className="truncate text-sm text-muted-foreground">
-            {log.metadata.userMessage.slice(0, 50)}
-            {log.metadata.userMessage.length > 50 ? "..." : ""}
-          </div>
-          <div className="text-xs text-muted-foreground">
-            Model: {log.metadata.model} | Tokens:{" "}
-            {log.response.totalTokens || "N/A"}
-          </div>
-        </li>
-      ))}
+      {logs.map((log) => {
+        // Parse the response here to get totalTokens
+        let totalTokens: number | string = "N/A";
+        try {
+          const responseObj = JSON.parse(log.response);
+          totalTokens = responseObj.usage?.totalTokens || "N/A";
+        } catch (error) {
+          console.error("Error parsing log response:", error);
+        }
+
+        // Extract user message from the log (it might be in a different location)
+        const userMessage =
+          log.metadata.userMessage || log.url || "No message available";
+
+        return (
+          <li
+            key={log.id}
+            className={`cursor-pointer rounded p-2 ${
+              selectedLogId === log.id
+                ? "border border-accent-foreground bg-accent"
+                : "hover:bg-secondary"
+            }`}
+            onClick={() => onLogSelect(log.id)}
+          >
+            <div className="font-semibold text-foreground">
+              {new Date(log.timestamp).toLocaleString()} - {log.method}
+            </div>
+            <div className="truncate text-sm text-muted-foreground">
+              {userMessage.slice(0, 50)}
+              {userMessage.length > 50 ? "..." : ""}
+            </div>
+            <div className="text-xs text-muted-foreground">
+              Provider: {log.metadata.provider} | Model: {log.metadata.model} |
+              Tokens: {totalTokens}
+            </div>
+          </li>
+        );
+      })}
     </ul>
   );
 };
