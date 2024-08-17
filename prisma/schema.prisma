@@ -1,0 +1,40 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Log {
+  id        String   @id @default(cuid())
+  method    String
+  url       String
+  headers   String
+  body      String
+  response  String
+  timestamp DateTime @default(now())
+  metadata  Json
+
+  @@index([timestamp])
+}
+
+model AIConfiguration {
+  id                String   @id @default(cuid())
+  name              String   @unique
+  provider          String   @default("openai")
+  model             String
+  temperature       Float?
+  maxTokens         Int?
+  topP              Float?
+  frequencyPenalty  Float?
+  presencePenalty   Float?
+  isDefault         Boolean  @default(false)
+  apiKey            String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
