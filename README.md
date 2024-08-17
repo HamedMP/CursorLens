@@ -2,6 +2,8 @@
 
 Cursor Lens is an open-source tool designed to provide insights into AI-assisted coding sessions using Cursor AI. It acts as a proxy between Cursor and various AI providers, logging interactions and providing detailed analytics to help developers optimize their use of AI in their coding workflow.
 
+![Cursor Lens Dashboard](public/cl-dashboard.png)
+
 ## Features
 
 - **AI Provider Integration**: Supports multiple AI providers including OpenAI, Anthropic, and more.
@@ -44,9 +46,15 @@ For full details on each step, please see the [Installation Guide](https://www.c
 
 ## Usage
 
-1. Configure Cursor to use Cursor Lens as its API endpoint.
-2. Use Cursor as normal for AI-assisted coding.
+1. Configure Cursor to use Cursor Lens as its API endpoint by overriding `OpenAI Base URL`.
+2. Choose a `gpt-` model. Use Cursor as normal for AI-assisted coding.
 3. Visit the Cursor Lens dashboard to view logs, statistics, and insights.
+
+![Cursor settings](public/cl-settings.png)
+
+## Stats page
+
+![Cursor Lens Stats](public/cl-stats.png)
 
 ## Contributing
 
