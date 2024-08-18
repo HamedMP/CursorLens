@@ -11,6 +11,7 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "Cursor Lens",
   description: "Analytics and Routing for Cursor IDE",
+  metadataBase: new URL("https://cursorlens.com"),
 };
 
 export default function RootLayout({
