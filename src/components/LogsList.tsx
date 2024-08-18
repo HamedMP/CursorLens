@@ -96,7 +96,6 @@ export default function LogsList({
     <Card className="h-[calc(100vh-140px)]">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-xl font-bold">Requests</CardTitle>
-        <Button onClick={() => router.refresh()}>Refresh</Button>
       </CardHeader>
       <CardContent>
         <ScrollArea className="h-[calc(100vh-200px)]">

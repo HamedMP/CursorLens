@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { format } from "date-fns";
 import { Calendar as CalendarIcon } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import LogsList from "@/components/LogsList";
 import LogDetails from "@/components/LogDetails";
 import { getLogs, getStats } from "@/app/actions";
@@ -22,6 +23,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { debounce } from "lodash"; // Make sure to install lodash if not already installed
 
 interface Stats {
   totalLogs: number;
@@ -40,38 +42,53 @@ export default function Logs() {
   const [selectedLogId, setSelectedLogId] = useState<string | undefined>(
     undefined,
   );
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [provider, setProvider] = useState<string>("all");
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
   const [endDate, setEndDate] = useState<Date | undefined>(undefined);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [fetchedLogs, fetchedStats] = await Promise.all([
-          getLogs({
-            provider,
-            startDate: startDate ? format(startDate, "yyyy-MM-dd") : undefined,
-            endDate: endDate ? format(endDate, "yyyy-MM-dd") : undefined,
-          }),
-          getStats(),
-        ]);
-        setLogs(fetchedLogs);
-        setStats(fetchedStats);
-        setLoading(false);
-      } catch (error) {
-        console.error("Error fetching data:", error);
-        setError("Error loading data");
-        setLoading(false);
-      }
-    };
-    fetchData();
-  }, [provider, startDate, endDate]);
+  const [isLoading, setIsLoading] = useState(true);
 
   const handleLogSelect = (logId: string) => {
     setSelectedLogId(logId);
   };
+
+  const fetchData = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const [fetchedLogs, fetchedStats] = await Promise.all([
+        getLogs({
+          provider,
+          startDate: startDate ? format(startDate, "yyyy-MM-dd") : undefined,
+          endDate: endDate ? format(endDate, "yyyy-MM-dd") : undefined,
+        }),
+        getStats(),
+      ]);
+
+      setLogs(fetchedLogs);
+      setStats(fetchedStats);
+    } catch (error) {
+      setError("Error loading data");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [provider, startDate, endDate]);
+
+  const debouncedFetchData = useMemo(
+    () => debounce(fetchData, 500),
+    [fetchData],
+  );
+
+  useEffect(() => {
+    debouncedFetchData();
+    // Cleanup function to cancel any pending debounced calls
+    return () => debouncedFetchData.cancel();
+  }, [debouncedFetchData]);
+
+  const handleRefresh = useCallback(() => {
+    fetchData();
+  }, [fetchData]);
 
   const LoadingSkeleton = () => (
     <>
@@ -91,9 +108,21 @@ export default function Logs() {
     <div className="flex h-screen flex-col">
       <div className="flex flex-grow">
         <div className="flex w-1/3 flex-col border-r">
-          <h2 className="sticky top-0 z-10 border-b p-4 text-xl font-bold">
-            Logs List
-          </h2>
+          <div className="sticky top-0 z-10 border-b p-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-bold">Logs List</h2>
+              <Button
+                onClick={handleRefresh}
+                variant="outline"
+                size="icon"
+                disabled={isLoading}
+              >
+                <RefreshCw
+                  className={cn("h-4 w-4", isLoading && "animate-spin")}
+                />
+              </Button>
+            </div>
+          </div>
           <div className="space-y-2 p-4">
             <Select onValueChange={(value) => setProvider(value)}>
               <SelectTrigger>
@@ -103,6 +132,10 @@ export default function Logs() {
                 <SelectItem value="all">All Providers</SelectItem>
                 <SelectItem value="openai">OpenAI</SelectItem>
                 <SelectItem value="anthropic">Anthropic</SelectItem>
+                <SelectItem value="cohere">Cohere</SelectItem>
+                <SelectItem value="mistral">Mistral</SelectItem>
+                <SelectItem value="groq">Groq</SelectItem>
+                <SelectItem value="ollama">Ollama</SelectItem>
               </SelectContent>
             </Select>
             <Popover>
@@ -155,7 +188,7 @@ export default function Logs() {
             </Popover>
           </div>
           <div className="flex-grow overflow-y-auto">
-            {loading ? (
+            {isLoading ? (
               <LoadingSkeleton />
             ) : error ? (
               <p className="p-4">{error}</p>

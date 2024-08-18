@@ -1,5 +1,8 @@
-import { openai } from "@ai-sdk/openai";
+import { openai, createOpenAI } from "@ai-sdk/openai";
 import { anthropic, createAnthropic } from "@ai-sdk/anthropic";
+import { createCohere } from "@ai-sdk/cohere";
+import { createMistral } from "@ai-sdk/mistral";
+import { ollama } from "ollama-ai-provider";
 
 import { generateText, streamText } from "ai";
 import { insertLog, getDefaultConfiguration } from "@/lib/db";
@@ -45,6 +48,8 @@ export async function POST(
     if (!provider) {
       throw new Error("Provider is not defined in the default configuration");
     }
+    console.log("provider", provider);
+    console.log("model", model);
 
     let aiModel;
     switch (provider.toLowerCase()) {
@@ -56,6 +61,27 @@ export async function POST(
           apiKey: process.env.ANTHROPIC_API_KEY!,
         });
         aiModel = anthropicClient(model);
+        break;
+      case "cohere":
+        const cohereClient = createCohere({
+          apiKey: process.env.COHERE_API_KEY!,
+        });
+        aiModel = cohereClient(model);
+        break;
+      case "mistral":
+        const mistralClient = createMistral({
+          apiKey: process.env.MISTRAL_API_KEY!,
+        });
+        aiModel = mistralClient(model);
+        break;
+      case "groq":
+        const groqClient = createOpenAI({
+          apiKey: process.env.GROQ_API_KEY!,
+        });
+        aiModel = groqClient(model);
+        break;
+      case "ollama":
+        aiModel = ollama("llama3.1");
         break;
       case "google-vertex":
         throw new Error("Google Vertex AI is not currently supported");
@@ -197,6 +223,12 @@ export async function GET(
     return testOpenAI();
   } else if (endpoint === "test/anthropic") {
     return testAnthropic();
+  } else if (endpoint === "test/cohere") {
+    return testCohere();
+  } else if (endpoint === "test/mistral") {
+    return testMistral();
+  } else if (endpoint === "test/groq") {
+    return testGroq();
   }
 
   return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -229,6 +261,57 @@ async function testAnthropic() {
     return NextResponse.json({ provider: "Anthropic", result });
   } catch (error) {
     console.error("Error testing Anthropic:", error);
+    return NextResponse.json({ error: String(error) }, { status: 500 });
+  }
+}
+
+async function testCohere() {
+  try {
+    const cohereClient = createCohere({
+      apiKey: process.env.COHERE_API_KEY!,
+    });
+    const model = cohereClient("command");
+    const result = await generateText({
+      model,
+      messages: [{ role: "user", content: 'Say "Hello from Cohere!"' }],
+    });
+    return NextResponse.json({ provider: "Cohere", result });
+  } catch (error) {
+    console.error("Error testing Cohere:", error);
+    return NextResponse.json({ error: String(error) }, { status: 500 });
+  }
+}
+
+async function testMistral() {
+  try {
+    const mistralClient = createMistral({
+      apiKey: process.env.MISTRAL_API_KEY!,
+    });
+    const model = mistralClient("mistral-small-latest");
+    const result = await generateText({
+      model,
+      messages: [{ role: "user", content: 'Say "Hello from Mistral!"' }],
+    });
+    return NextResponse.json({ provider: "Mistral", result });
+  } catch (error) {
+    console.error("Error testing Mistral:", error);
+    return NextResponse.json({ error: String(error) }, { status: 500 });
+  }
+}
+
+async function testGroq() {
+  try {
+    const groqClient = createOpenAI({
+      apiKey: process.env.GROQ_API_KEY!,
+    });
+    const model = groqClient("llama-3.1-70b-versatile");
+    const result = await generateText({
+      model,
+      messages: [{ role: "user", content: 'Say "Hello from Groq!"' }],
+    });
+    return NextResponse.json({ provider: "Groq", result });
+  } catch (error) {
+    console.error("Error testing Groq:", error);
     return NextResponse.json({ error: String(error) }, { status: 500 });
   }
 }
