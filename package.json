@@ -13,8 +13,11 @@
     "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
+    "@ai-sdk/amazon-bedrock": "^0.0.17",
     "@ai-sdk/anthropic": "^0.0.41",
+    "@ai-sdk/cohere": "^0.0.17",
     "@ai-sdk/google-vertex": "^0.0.28",
+    "@ai-sdk/mistral": "^0.0.34",
     "@ai-sdk/openai": "^0.0.46",
     "@prisma/client": "^5.18.0",
     "@radix-ui/react-checkbox": "^1.1.1",
@@ -31,6 +34,7 @@
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
     "date-fns": "^3.6.0",
+    "lodash": "^4.17.21",
     "lucide-react": "^0.427.0",
     "next": "14.2.5",
     "next-themes": "^0.3.0",
@@ -48,6 +52,7 @@
     "tailwindcss-animate": "^1.0.7"
   },
   "devDependencies": {
+    "@types/lodash": "^4.17.7",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
