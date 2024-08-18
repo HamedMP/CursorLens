@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { getStats, getConfigurations, getConfigurationCosts } from "../actions";
-import { AIConfiguration } from "@prisma/client";
+import type { AIConfiguration } from "@prisma/client";
 import {
   BarChart,
   Bar,
@@ -40,6 +40,8 @@ interface Stats {
     [key: string]: {
       logs: number;
       tokens: number;
+      promptTokens: number;
+      completionTokens: number;
       cost: number;
     };
   };
@@ -80,24 +82,30 @@ export default function StatsPage() {
         ]);
 
         const perModelStats: Stats["perModelStats"] = {};
-        configData.forEach((config) => {
+        for (const config of configData) {
           perModelStats[config.model] = {
             logs: 0,
             tokens: 0,
+            promptTokens: 0,
+            completionTokens: 0,
             cost: 0,
           };
-        });
+        }
 
-        Object.entries(statsData.perModelStats).forEach(
-          ([model, modelStats]) => {
-            perModelStats[model] = {
-              ...modelStats,
-              cost:
-                modelStats.tokens *
-                (costsData.find((c) => c.model === model)?.cost || 0),
-            };
-          },
-        );
+        for (const [model, modelStats] of Object.entries(
+          statsData.perModelStats,
+        )) {
+          const costData = costsData.find((c) => c.model === model);
+          const inputTokenCost = costData?.inputTokenCost || 0;
+          const outputTokenCost = costData?.outputTokenCost || 0;
+
+          perModelStats[model] = {
+            ...modelStats,
+            cost:
+              modelStats.promptTokens * inputTokenCost +
+              modelStats.completionTokens * outputTokenCost,
+          };
+        }
 
         setStats({
           totalLogs: statsData.totalLogs,
@@ -121,8 +129,8 @@ export default function StatsPage() {
       <div className="container mx-auto p-8">
         <Skeleton className="mb-8 h-12 w-64" />
         <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-3">
-          {[...Array(3)].map((_, i) => (
-            <Card key={i}>
+          {["card1", "card2", "card3"].map((key) => (
+            <Card key={key}>
               <CardHeader>
                 <Skeleton className="h-6 w-32" />
               </CardHeader>
@@ -132,8 +140,8 @@ export default function StatsPage() {
             </Card>
           ))}
         </div>
-        {[...Array(3)].map((_, i) => (
-          <Card key={i} className="mb-8">
+        {["card1", "card2", "card3"].map((key) => (
+          <Card key={key} className="mb-8">
             <CardHeader>
               <Skeleton className="h-6 w-48" />
             </CardHeader>
@@ -331,10 +339,10 @@ export default function StatsPage() {
                     `${name} ${(percent * 100).toFixed(0)}%`
                   }
                 >
-                  {pieChartData.map((entry, index) => (
+                  {pieChartData.map((entry) => (
                     <Cell
-                      key={`cell-${index}`}
-                      fill={COLORS[index % COLORS.length]}
+                      key={entry.name}
+                      fill={COLORS[pieChartData.indexOf(entry) % COLORS.length]}
                     />
                   ))}
                 </Pie>
