@@ -23,6 +23,13 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { PlusIcon } from "lucide-react";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   getConfigurations,
   updateDefaultConfiguration,
   createConfiguration,
@@ -46,19 +53,9 @@ interface AIConfiguration {
 
 const configTemplates = [
   {
-    name: "OpenAI GPT-3.5",
-    provider: "openai",
-    model: "gpt-3.5-turbo",
-    temperature: 0.7,
-    maxTokens: 2048,
-    topP: 1,
-    frequencyPenalty: 0,
-    presencePenalty: 0,
-  },
-  {
     name: "OpenAI GPT-4",
     provider: "openai",
-    model: "gpt-4",
+    model: "gpt-4-turbo",
     temperature: 0.7,
     maxTokens: 8192,
     topP: 1,
@@ -66,22 +63,94 @@ const configTemplates = [
     presencePenalty: 0,
   },
   {
-    name: "Anthropic Claude",
-    provider: "anthropic",
-    model: "claude-2",
+    name: "OpenAI GPT-4 Optimized",
+    provider: "openai",
+    model: "gpt-4o",
     temperature: 0.7,
-    maxTokens: 100000,
+    maxTokens: 8192,
+    topP: 1,
+    frequencyPenalty: 0,
+    presencePenalty: 0,
+  },
+  {
+    name: "OpenAI GPT-4 Mini",
+    provider: "openai",
+    model: "gpt-4o-mini",
+    temperature: 0.7,
+    maxTokens: 4096,
+    topP: 1,
+    frequencyPenalty: 0,
+    presencePenalty: 0,
+  },
+  {
+    name: "Anthropic Claude 3.5 Sonnet",
+    provider: "anthropic",
+    model: "claude-3-5-sonnet-20240620",
+    temperature: 0.7,
+    maxTokens: 200000,
+    topP: 1,
+    frequencyPenalty: 0,
+    presencePenalty: 0,
+  },
+  {
+    name: "Mistral Large",
+    provider: "mistral",
+    model: "mistral-large-latest",
+    temperature: 0.7,
+    maxTokens: 32768,
+    topP: 1,
+    frequencyPenalty: 0,
+    presencePenalty: 0,
+  },
+  {
+    name: "Groq LLaMA 3.1",
+    provider: "groq",
+    model: "llama-3.1-70b-versatile",
+    temperature: 0.7,
+    maxTokens: 32768,
     topP: 1,
     frequencyPenalty: 0,
     presencePenalty: 0,
   },
 ];
 
+const providerModels = {
+  openai: ["gpt-4o", "gpt-4o-mini", "gpt-4-turbo"],
+  anthropic: [
+    "claude-3-5-sonnet-20240620",
+    "claude-3-opus-20240229",
+    "claude-3-sonnet-20240229",
+    "claude-3-haiku-20240307",
+  ],
+  cohere: ["command-r", "command-r-plus"],
+  mistral: [
+    "mistral-large-latest",
+    "mistral-medium-latest",
+    "mistral-small-latest",
+    "open-mistral-nemo",
+    "open-mixtral-8x22b",
+    "open-mixtral-8x7b",
+    "open-mistral-7b",
+  ],
+  groq: [
+    "llama-3.1-405b-reasoning",
+    "llama-3.1-70b-versatile",
+    "llama-3.1-8b-instant",
+    "mixtral-8x7b-32768",
+    "gemma2-9b-it",
+  ],
+  other: ["Other"],
+};
+
 export default function ConfigurationsPage() {
   const [configurations, setConfigurations] = useState<AIConfiguration[]>([]);
   const [newConfig, setNewConfig] = useState<Partial<AIConfiguration>>({});
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedProvider, setSelectedProvider] = useState<string>("");
+  const [selectedModel, setSelectedModel] = useState<string>("");
+  const [customProvider, setCustomProvider] = useState<string>("");
+  const [customModel, setCustomModel] = useState<string>("");
 
   const sortedConfigurations = useMemo(() => {
     return [...configurations].sort((a, b) => {
@@ -129,7 +198,39 @@ export default function ConfigurationsPage() {
   };
 
   const handleTemplateSelect = (template: (typeof configTemplates)[0]) => {
-    setNewConfig({ ...template });
+    const readableName = `${template.provider.charAt(0).toUpperCase() + template.provider.slice(1)} ${template.model}`;
+    setNewConfig({ ...template, name: readableName });
+    setSelectedProvider(template.provider);
+    setSelectedModel(template.model);
+  };
+
+  const handleProviderChange = (value: string) => {
+    setSelectedProvider(value);
+    setSelectedModel("");
+    setNewConfig({
+      ...newConfig,
+      provider: value === "other" ? "" : value,
+      model: "",
+    });
+    setCustomProvider("");
+  };
+
+  const handleModelChange = (value: string) => {
+    setSelectedModel(value);
+    setNewConfig({ ...newConfig, model: value === "Other" ? "" : value });
+    setCustomModel("");
+  };
+
+  const handleCustomProviderChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    setCustomProvider(e.target.value);
+    setNewConfig({ ...newConfig, provider: e.target.value });
+  };
+
+  const handleCustomModelChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setCustomModel(e.target.value);
+    setNewConfig({ ...newConfig, model: e.target.value });
   };
 
   return (
@@ -182,12 +283,27 @@ export default function ConfigurationsPage() {
             Add Configuration
           </Button>
         </DialogTrigger>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-[475px]">
           <DialogHeader>
             <DialogTitle>Add New Configuration</DialogTitle>
           </DialogHeader>
           <div className="grid max-h-[60vh] gap-4 overflow-y-auto py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
+            <div className="mt-4">
+              <Label>Templates</Label>
+              <div className="mt-2 grid grid-cols-2 gap-2">
+                {configTemplates.map((template, index) => (
+                  <Button
+                    key={index}
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => handleTemplateSelect(template)}
+                  >
+                    {template.name}
+                  </Button>
+                ))}
+              </div>
+            </div>
+            <div className="mt-2 grid grid-cols-4 items-center gap-4">
               <Label htmlFor="name" className="text-right">
                 Name
               </Label>
@@ -204,45 +320,71 @@ export default function ConfigurationsPage() {
               <Label htmlFor="provider" className="text-right">
                 Provider
               </Label>
-              <Input
-                id="provider"
-                value={newConfig.provider || ""}
-                onChange={(e) =>
-                  setNewConfig({ ...newConfig, provider: e.target.value })
-                }
-                className="col-span-3"
-              />
+              <div className="col-span-3">
+                <Select
+                  value={selectedProvider}
+                  onValueChange={handleProviderChange}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select provider" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.keys(providerModels).map((provider) => (
+                      <SelectItem key={provider} value={provider}>
+                        {provider}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {selectedProvider === "other" && (
+                  <Input
+                    id="customProvider"
+                    value={customProvider}
+                    onChange={handleCustomProviderChange}
+                    placeholder="Enter custom provider"
+                    className="mt-2"
+                  />
+                )}
+              </div>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="model" className="text-right">
                 Model
               </Label>
-              <Input
-                id="model"
-                value={newConfig.model || ""}
-                onChange={(e) =>
-                  setNewConfig({ ...newConfig, model: e.target.value })
-                }
-                className="col-span-3"
-              />
-            </div>
-          </div>
-          <div className="mt-4">
-            <Label>Templates</Label>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {configTemplates.map((template, index) => (
-                <Button
-                  key={index}
-                  variant="outline"
-                  onClick={() => handleTemplateSelect(template)}
+              <div className="col-span-3">
+                <Select
+                  value={selectedModel}
+                  onValueChange={handleModelChange}
+                  disabled={!selectedProvider}
                 >
-                  {template.name}
-                </Button>
-              ))}
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select model" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {selectedProvider &&
+                      providerModels[
+                        selectedProvider as keyof typeof providerModels
+                      ].map((model) => (
+                        <SelectItem key={model} value={model}>
+                          {model}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+                {selectedModel === "Other" && (
+                  <Input
+                    id="customModel"
+                    value={customModel}
+                    onChange={handleCustomModelChange}
+                    placeholder="Enter custom model"
+                    className="mt-2"
+                  />
+                )}
+              </div>
             </div>
-          </div>
-          <div className="mt-4 flex justify-end">
-            <Button onClick={handleCreateConfig}>Create Configuration</Button>
+            <div className="mt-4 flex justify-end">
+              <Button onClick={handleCreateConfig}>Create Configuration</Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
