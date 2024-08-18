@@ -2,6 +2,7 @@ import { openai, createOpenAI } from "@ai-sdk/openai";
 import { anthropic, createAnthropic } from "@ai-sdk/anthropic";
 import { createCohere } from "@ai-sdk/cohere";
 import { createMistral } from "@ai-sdk/mistral";
+import { ollama } from "ollama-ai-provider";
 
 import { generateText, streamText } from "ai";
 import { insertLog, getDefaultConfiguration } from "@/lib/db";
@@ -78,6 +79,9 @@ export async function POST(
           apiKey: process.env.GROQ_API_KEY!,
         });
         aiModel = groqClient(model);
+        break;
+      case "ollama":
+        aiModel = ollama("llama3.1");
         break;
       case "google-vertex":
         throw new Error("Google Vertex AI is not currently supported");

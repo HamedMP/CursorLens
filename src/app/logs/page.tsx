@@ -135,6 +135,7 @@ export default function Logs() {
                 <SelectItem value="cohere">Cohere</SelectItem>
                 <SelectItem value="mistral">Mistral</SelectItem>
                 <SelectItem value="groq">Groq</SelectItem>
+                <SelectItem value="ollama">Ollama</SelectItem>
               </SelectContent>
             </Select>
             <Popover>

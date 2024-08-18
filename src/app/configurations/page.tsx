@@ -139,6 +139,7 @@ const providerModels = {
     "mixtral-8x7b-32768",
     "gemma2-9b-it",
   ],
+  ollama: ["llama3.1"],
   other: ["Other"],
 };
 
