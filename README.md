@@ -72,7 +72,7 @@ Cursor Lens is licensed under the GNU Affero General Public License v3.0 (AGPL-3
 
 If you encounter any issues or have questions, please file an issue on the GitHub repository or contact the maintainers directly.
 
-For more detailed information, please visit our [documentation](https://www.cursorlens.com/docs/getting-started/introduction).
+For more detailed information, please visit our [documentation](https://www.cursorlens.com/docs/project/introduction).
 
 ---
 
