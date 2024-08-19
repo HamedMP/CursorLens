@@ -48,8 +48,6 @@ export async function POST(
     if (!provider) {
       throw new Error("Provider is not defined in the default configuration");
     }
-    console.log("provider", provider);
-    console.log("model", model);
 
     let aiModel;
     switch (provider.toLowerCase()) {
