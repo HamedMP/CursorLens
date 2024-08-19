@@ -11,11 +11,11 @@ export const env = createEnv({
     NODE_ENV: z
       .enum(["development", "test", "production"])
       .default("development"),
-    OPENAI_API_KEY: z.string(),
-    ANTHROPIC_API_KEY: z.string(),
-    COHERE_API_KEY: z.string(), // Added
-    MISTRAL_API_KEY: z.string(), // Added
-    GROQ_API_KEY: z.string(), // Added
+    OPENAI_API_KEY: z.string().optional(),
+    ANTHROPIC_API_KEY: z.string().optional(),
+    COHERE_API_KEY: z.string().optional(),
+    MISTRAL_API_KEY: z.string().optional(),
+    GROQ_API_KEY: z.string().optional(),
   },
 
   /**
@@ -36,9 +36,9 @@ export const env = createEnv({
     NODE_ENV: process.env.NODE_ENV,
     OPENAI_API_KEY: process.env.OPENAI_API_KEY,
     ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
-    COHERE_API_KEY: process.env.COHERE_API_KEY, // Added
-    MISTRAL_API_KEY: process.env.MISTRAL_API_KEY, // Added
-    GROQ_API_KEY: process.env.GROQ_API_KEY, // Added
+    COHERE_API_KEY: process.env.COHERE_API_KEY,
+    MISTRAL_API_KEY: process.env.MISTRAL_API_KEY,
+    GROQ_API_KEY: process.env.GROQ_API_KEY,
     // NEXT_PUBLIC_CLIENTVAR: process.env.NEXT_PUBLIC_CLIENTVAR,
   },
   /**
