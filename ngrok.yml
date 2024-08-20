@@ -1,0 +1,5 @@
+version: "2"
+tunnels:
+  web:
+    proto: http
+    addr: host.docker.internal:3000

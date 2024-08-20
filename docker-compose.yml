@@ -30,9 +30,26 @@ services:
     depends_on:
       - db
 
+  ngrok:
+    image: ngrok/ngrok:latest
+    container_name: cursorlens_ngrok
+    restart: unless-stopped
+    command:
+      - "start"
+      - "--all"
+      - "--config"
+      - "/etc/ngrok.yml"
+    volumes:
+      - ./ngrok.yml:/etc/ngrok.yml
+    ports:
+      - 4040:4040
+    environment:
+      - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN}
+
 volumes:
   postgres_data:
 
 networks:
   default:
     name: postgres_network
+    external: true

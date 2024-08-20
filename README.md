@@ -27,32 +27,48 @@ We are live on ProductHunt today, please upvote us if you find this useful! 🙏
 
 ## Getting Started
 
-For detailed installation instructions, please refer to our [Installation Guide](https://www.cursorlens.com/docs/getting-started/installation).
-
 ### Prerequisites
 
 - Node.js (v14 or later)
 - pnpm
-- PostgreSQL
-- ngrok
+- Docker and Docker Compose
+- ngrok account and authtoken (sign up for free at ngrok.com)
 
 ### Quick Installation Steps
 
 1. Clone the repository
 2. Install dependencies with `pnpm install`
-3. Set up environment variables
+3. Set up environment variables:
+   - Create a `.env` file in the root directory of the project
+   - Sign up for a free account at <https://ngrok.com> if you haven't already
+   - Obtain your ngrok authtoken from <https://dashboard.ngrok.com/get-started/your-authtoken>
+   - Add your ngrok authtoken to the `.env` file: `NGROK_AUTHTOKEN=your_token_here`
 4. Set up the database with `pnpm prisma migrate dev`
-5. Build the project with `pnpm build`
-6. Set up ngrok
-7. Configure Cursor to use your ngrok URL as the API endpoint
+5. Build and start the project with `pnpm build` and `pnpm start`
+6. In a separate terminal, start the Docker services:
+
+   ```
+   make up
+   ```
+
+7. Get your ngrok URL from `http://localhost:4040`, by running the following if you have `curl` and `jq` installed:
+
+   ```
+   make ngrok-url
+   ```
+
+   or from the ngrok dashboard at <https://dashboard.ngrok.com/cloud-edge/endpoints>.
+
+8. Configure Cursor to use your ngrok URL as the API endpoint
 
 For full details on each step, please see the [Installation Guide](https://www.cursorlens.com/docs/getting-started/installation).
 
 ## Usage
 
-1. Configure Cursor to use Cursor Lens as its API endpoint by overriding `OpenAI Base URL`.
-2. Choose a `gpt-` model. Use Cursor as normal for AI-assisted coding.
-3. Visit the Cursor Lens dashboard to view logs, statistics, and insights.
+1. Settings > Cursor Settings > Models > OpenAI API Key
+2. Configure Cursor to use Cursor Lens as its API endpoint by overriding `OpenAI Base URL`.
+3. Choose a `gpt-` model. Use Cursor as normal for AI-assisted coding.
+4. Visit the Cursor Lens dashboard to view logs, statistics, and insights.
 
 ![Cursor settings](public/cl-settings.png)
 

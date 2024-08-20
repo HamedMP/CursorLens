@@ -43,6 +43,12 @@ backup:
 restore:
 	cat backup.sql | docker-compose -f $(COMPOSE_FILE) exec -T db psql -U postgres -d cursorlens
 
+# Get ngrok URL
+ngrok-url:
+	@echo "Fetching ngrok URL..."
+	@curl -s http://localhost:4040/api/tunnels | jq -r '.tunnels[0].public_url'
+
+
 # List available targets
 help:
 	@echo "Available targets:"
@@ -56,4 +62,5 @@ help:
 	@echo "  psql           - Connect to the PostgreSQL database using psql"
 	@echo "  backup         - Backup the PostgreSQL database"
 	@echo "  restore        - Restore the PostgreSQL database from backup"
+	@echo "  ngrok-url      - Get the ngrok URL"
 	@echo "  help           - Show this help message"
