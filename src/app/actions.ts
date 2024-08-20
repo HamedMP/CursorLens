@@ -1,7 +1,8 @@
 "use server";
 
+import { getModelConfigurations } from "@/lib/model-config";
 import prisma from "@/lib/prisma";
-import { Log, AIConfiguration } from "@prisma/client";
+import type { Log, AIConfiguration, Prisma } from "@prisma/client";
 
 // Helper function to serialize dates
 function serializeDates<T>(obj: T): T {
@@ -26,40 +27,34 @@ export async function getLogs({
   endDate = "",
 }: { provider?: string; startDate?: string; endDate?: string } = {}) {
   try {
-    let query: any = {
+    const query: Prisma.LogFindManyArgs = {
       orderBy: {
         timestamp: "desc",
       },
     };
 
+    const whereConditions: Prisma.LogWhereInput = {};
+
     if (provider !== "all") {
-      query.where = {
-        ...query.where,
-        metadata: {
-          path: ["provider"],
-          equals: provider,
-        },
+      whereConditions.metadata = {
+        path: ["provider"],
+        equals: provider,
       };
     }
 
-    if (startDate) {
-      query.where = {
-        ...query.where,
-        timestamp: {
-          ...query.where?.timestamp,
-          gte: new Date(startDate),
-        },
-      };
+    if (startDate || endDate) {
+      whereConditions.timestamp = {};
+      if (startDate) {
+        whereConditions.timestamp.gte = new Date(startDate);
+      }
+      if (endDate) {
+        whereConditions.timestamp.lte = new Date(endDate);
+      }
     }
 
-    if (endDate) {
-      query.where = {
-        ...query.where,
-        timestamp: {
-          ...query.where?.timestamp,
-          lte: new Date(endDate),
-        },
-      };
+    // Only add the where clause if we have conditions
+    if (Object.keys(whereConditions).length > 0) {
+      query.where = whereConditions;
     }
 
     const logs = await prisma.log.findMany(query);
@@ -75,18 +70,24 @@ export async function getLogs({
   }
 }
 
-export async function getStats(timeFilter: string = "all"): Promise<{
+export async function getStats(timeFilter = "all"): Promise<{
   totalLogs: number;
   totalTokens: number;
+  totalPromptTokens: number;
+  totalCompletionTokens: number;
   perModelStats: {
     [key: string]: {
       logs: number;
       tokens: number;
+      promptTokens: number;
+      completionTokens: number;
     };
   };
   tokenUsageOverTime: {
     date: string;
     tokens: number;
+    promptTokens: number;
+    completionTokens: number;
   }[];
 }> {
   let startDate = new Date(0); // Default to all time
@@ -118,25 +119,45 @@ export async function getStats(timeFilter: string = "all"): Promise<{
     [key: string]: {
       logs: number;
       tokens: number;
+      promptTokens: number;
+      completionTokens: number;
     };
   } = {};
 
   let totalTokens = 0;
-  const tokenUsageOverTime: { date: string; tokens: number }[] = [];
+  let totalPromptTokens = 0;
+  let totalCompletionTokens = 0;
+  const tokenUsageOverTime: {
+    date: string;
+    tokens: number;
+    promptTokens: number;
+    completionTokens: number;
+  }[] = [];
 
-  logs.forEach((log) => {
-    const metadata = log.metadata as any;
-    const model = metadata.model || "unknown";
+  for (const log of logs) {
+    const metadata = log.metadata as Record<string, unknown>;
+    const model = (metadata.model as string) || "unknown";
     if (!perModelStats[model]) {
-      perModelStats[model] = { logs: 0, tokens: 0 };
+      perModelStats[model] = {
+        logs: 0,
+        tokens: 0,
+        promptTokens: 0,
+        completionTokens: 0,
+      };
     }
     perModelStats[model].logs += 1;
 
     try {
       const responseObj = JSON.parse(log.response);
       const tokens = responseObj.usage?.totalTokens || 0;
+      const promptTokens = responseObj.usage?.promptTokens || 0;
+      const completionTokens = responseObj.usage?.completionTokens || 0;
       perModelStats[model].tokens += tokens;
+      perModelStats[model].promptTokens += promptTokens;
+      perModelStats[model].completionTokens += completionTokens;
       totalTokens += tokens;
+      totalPromptTokens += promptTokens;
+      totalCompletionTokens += completionTokens;
 
       const date = log.timestamp.toISOString().split("T")[0];
       const existingEntry = tokenUsageOverTime.find(
@@ -144,17 +165,26 @@ export async function getStats(timeFilter: string = "all"): Promise<{
       );
       if (existingEntry) {
         existingEntry.tokens += tokens;
+        existingEntry.promptTokens += promptTokens;
+        existingEntry.completionTokens += completionTokens;
       } else {
-        tokenUsageOverTime.push({ date, tokens });
+        tokenUsageOverTime.push({
+          date,
+          tokens,
+          promptTokens,
+          completionTokens,
+        });
       }
     } catch (error) {
       console.error("Error parsing log response:", error);
     }
-  });
+  }
 
   return {
     totalLogs: logs.length,
     totalTokens,
+    totalPromptTokens,
+    totalCompletionTokens,
     perModelStats,
     tokenUsageOverTime,
   };
@@ -178,15 +208,43 @@ export async function updateDefaultConfiguration(
   });
 }
 
-export async function createConfiguration(
-  data: Partial<AIConfiguration>,
-): Promise<AIConfiguration> {
+export async function createConfiguration(config: Partial<AIConfiguration>) {
+  const {
+    name,
+    provider,
+    model,
+    temperature,
+    maxTokens,
+    topP,
+    frequencyPenalty,
+    presencePenalty,
+    isDefault,
+    apiKey,
+  } = config;
+
+  // TODO: Consider using Zod schemas for validation and potentially integrate
+  // https://github.com/vantezzen/auto-form for form generation and validation
+
+  // Guard clause to ensure required fields are present
+  if (!name || !provider || !model) {
+    throw new Error("Name, provider, and model are required fields");
+  }
+
   const newConfig = await prisma.aIConfiguration.create({
     data: {
-      ...data,
-      isDefault: false, // Ensure new configurations are not default by default
-    } as AIConfiguration,
+      name,
+      provider,
+      model,
+      temperature: temperature,
+      maxTokens: maxTokens,
+      topP: topP,
+      frequencyPenalty: frequencyPenalty,
+      presencePenalty: presencePenalty,
+      isDefault: isDefault,
+      apiKey: apiKey,
+    },
   });
+
   return serializeDates(newConfig);
 }
 
@@ -207,14 +265,30 @@ export async function deleteConfiguration(id: string): Promise<void> {
   });
 }
 
-export async function getConfigurationCosts(): Promise<
-  { provider: string; model: string; cost: number }[]
-> {
-  // This is a placeholder function. In a real-world scenario, you would
-  // fetch this data from an API or database containing up-to-date pricing information.
-  return [
-    { provider: "openai", model: "gpt-3.5-turbo", cost: 0.002 },
-    { provider: "openai", model: "gpt-4", cost: 0.03 },
-    { provider: "anthropic", model: "claude-2", cost: 0.01 },
-  ];
+type ConfigurationCost = {
+  provider: string;
+  model: string;
+  inputTokenCost: number;
+  outputTokenCost: number;
+};
+
+export async function getConfigurationCosts(): Promise<ConfigurationCost[]> {
+  const modelConfigurations = getModelConfigurations();
+  return Object.entries(modelConfigurations).flatMap(([provider, models]) =>
+    Object.entries(models)
+      .filter(
+        (entry): entry is [string, NonNullable<(typeof entry)[1]>] =>
+          entry[1] !== null &&
+          "inputTokenCost" in entry[1] &&
+          "outputTokenCost" in entry[1],
+      )
+      .map(([model, config]) => ({
+        provider,
+        model,
+        inputTokenCost: config.inputTokenCost,
+        outputTokenCost: config.outputTokenCost,
+      })),
+  );
 }
+
+export { getModelConfigurations };
