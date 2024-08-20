@@ -34,6 +34,7 @@
     "@radix-ui/react-select": "^2.1.1",
     "@radix-ui/react-slot": "^1.1.0",
     "@radix-ui/react-switch": "^1.1.0",
+    "@t3-oss/env-nextjs": "^0.11.0",
     "@types/react-syntax-highlighter": "^15.5.13",
     "ai": "^3.3.7",
     "class-variance-authority": "^0.7.0",
@@ -55,7 +56,8 @@
     "sqlite": "^5.1.1",
     "sqlite3": "^5.1.7",
     "tailwind-merge": "^2.5.2",
-    "tailwindcss-animate": "^1.0.7"
+    "tailwindcss-animate": "^1.0.7",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@types/lodash": "^4.17.7",
