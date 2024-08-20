@@ -1,5 +1,6 @@
 "use server";
 
+import { getModelConfigurations } from "@/lib/model-config";
 import prisma from "@/lib/prisma";
 import type { Log, AIConfiguration, Prisma } from "@prisma/client";
 
@@ -244,157 +245,22 @@ type ConfigurationCost = {
 };
 
 export async function getConfigurationCosts(): Promise<ConfigurationCost[]> {
-  // TODO: (Stephen) When the prices change we need to factor in the valid from until date ranges
-  return [
-    {
-      provider: "openai",
-      model: "gpt-4o",
-      inputTokenCost: 0.000005,
-      outputTokenCost: 0.000015,
-    },
-    {
-      provider: "openai",
-      model: "gpt-4o-2024-08-06",
-      inputTokenCost: 0.0000025,
-      outputTokenCost: 0.00001,
-    },
-    {
-      provider: "openai",
-      model: "gpt-4o-mini",
-      inputTokenCost: 0.00000015,
-      outputTokenCost: 0.0000006,
-    },
-    {
-      provider: "openai",
-      model: "gpt-3.5-turbo-0125",
-      inputTokenCost: 0.0000005,
-      outputTokenCost: 0.0000015,
-    },
-    {
-      provider: "openai",
-      model: "chatgpt-4o-latest",
-      inputTokenCost: 0.000005,
-      outputTokenCost: 0.000015,
-    },
-    {
-      provider: "openai",
-      model: "gpt-4-turbo",
-      inputTokenCost: 0.00001,
-      outputTokenCost: 0.00003,
-    },
-    {
-      provider: "openai",
-      model: "gpt-4-turbo-2024-04-09",
-      inputTokenCost: 0.00001,
-      outputTokenCost: 0.00003,
-    },
-    {
-      provider: "openai",
-      model: "gpt-4",
-      inputTokenCost: 0.00003,
-      outputTokenCost: 0.00006,
-    },
-    {
-      provider: "openai",
-      model: "gpt-4-32k",
-      inputTokenCost: 0.00006,
-      outputTokenCost: 0.00012,
-    },
-    {
-      provider: "openai",
-      model: "gpt-4-0125-preview",
-      inputTokenCost: 0.00001,
-      outputTokenCost: 0.00003,
-    },
-    {
-      provider: "openai",
-      model: "gpt-4-1106-preview",
-      inputTokenCost: 0.00001,
-      outputTokenCost: 0.00003,
-    },
-    {
-      provider: "openai",
-      model: "gpt-4-vision-preview",
-      inputTokenCost: 0.00001,
-      outputTokenCost: 0.00003,
-    },
-    {
-      provider: "openai",
-      model: "gpt-3.5-turbo-instruct",
-      inputTokenCost: 0.0000015,
-      outputTokenCost: 0.000002,
-    },
-    {
-      provider: "openai",
-      model: "gpt-3.5-turbo-1106",
-      inputTokenCost: 0.000001,
-      outputTokenCost: 0.000002,
-    },
-    {
-      provider: "openai",
-      model: "gpt-3.5-turbo-0613",
-      inputTokenCost: 0.0000015,
-      outputTokenCost: 0.000002,
-    },
-    {
-      provider: "openai",
-      model: "gpt-3.5-turbo-16k-0613",
-      inputTokenCost: 0.000003,
-      outputTokenCost: 0.000004,
-    },
-    {
-      provider: "openai",
-      model: "gpt-3.5-turbo-0301",
-      inputTokenCost: 0.0000015,
-      outputTokenCost: 0.000002,
-    },
-    {
-      provider: "openai",
-      model: "davinci-002",
-      inputTokenCost: 0.000002,
-      outputTokenCost: 0.000002,
-    },
-    {
-      provider: "openai",
-      model: "babbage-002",
-      inputTokenCost: 0.0000004,
-      outputTokenCost: 0.0000004,
-    },
-    {
-      provider: "anthropic",
-      model: "claude-3-5-sonnet",
-      inputTokenCost: 0.000003,
-      outputTokenCost: 0.000015,
-    },
-    {
-      provider: "anthropic",
-      model: "claude-3-opus",
-      inputTokenCost: 0.000015,
-      outputTokenCost: 0.000075,
-    },
-    {
-      provider: "anthropic",
-      model: "claude-3-haiku",
-      inputTokenCost: 0.00000025,
-      outputTokenCost: 0.00000125,
-    },
-    {
-      provider: "anthropic",
-      model: "claude-2-1",
-      inputTokenCost: 0.000008,
-      outputTokenCost: 0.000024,
-    },
-    {
-      provider: "anthropic",
-      model: "claude-2-0",
-      inputTokenCost: 0.000008,
-      outputTokenCost: 0.000024,
-    },
-    {
-      provider: "anthropic",
-      model: "claude-instant",
-      inputTokenCost: 0.0000008,
-      outputTokenCost: 0.0000024,
-    },
-  ];
+  const modelConfigurations = getModelConfigurations();
+  return Object.entries(modelConfigurations).flatMap(([provider, models]) =>
+    Object.entries(models)
+      .filter(
+        (entry): entry is [string, NonNullable<(typeof entry)[1]>] =>
+          entry[1] !== null &&
+          "inputTokenCost" in entry[1] &&
+          "outputTokenCost" in entry[1],
+      )
+      .map(([model, config]) => ({
+        provider,
+        model,
+        inputTokenCost: config.inputTokenCost,
+        outputTokenCost: config.outputTokenCost,
+      })),
+  );
 }
+
+export { getModelConfigurations };
