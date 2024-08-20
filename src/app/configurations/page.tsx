@@ -374,7 +374,7 @@ export default function ConfigurationsPage() {
               <div className="mt-2 grid grid-cols-2 gap-2">
                 {configTemplates.map((template, index) => (
                   <Button
-                    key={index}
+                    key={template.name}
                     variant="outline"
                     className="w-full"
                     onClick={() => handleTemplateSelect(template)}

@@ -6,15 +6,53 @@ import { ollama } from "ollama-ai-provider";
 
 import { generateText, streamText } from "ai";
 import { insertLog, getDefaultConfiguration } from "@/lib/db";
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
+import { env } from "@/env";
 
 const openaiClient = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY!,
+  apiKey: env.OPENAI_API_KEY,
 });
 
 // Allow streaming responses up to 30 seconds
 export const maxDuration = 30;
+
+async function getAIModelClient(provider: string, model: string) {
+  switch (provider.toLowerCase()) {
+    case "openai":
+      return openai(model);
+    case "anthropic": {
+      const anthropicClient = createAnthropic({
+        apiKey: env.ANTHROPIC_API_KEY,
+      });
+      return anthropicClient(model);
+    }
+    case "cohere": {
+      const cohereClient = createCohere({
+        apiKey: env.COHERE_API_KEY,
+      });
+      return cohereClient(model);
+    }
+    case "mistral": {
+      const mistralClient = createMistral({
+        apiKey: env.MISTRAL_API_KEY,
+      });
+      return mistralClient(model);
+    }
+    case "groq": {
+      const groqClient = createOpenAI({
+        apiKey: env.GROQ_API_KEY,
+      });
+      return groqClient(model);
+    }
+    case "ollama":
+      return ollama("llama3.1");
+    case "google-vertex":
+      throw new Error("Google Vertex AI is not currently supported");
+    default:
+      throw new Error(`Unsupported provider: ${provider}`);
+  }
+}
 
 export async function POST(
   request: NextRequest,
@@ -49,43 +87,7 @@ export async function POST(
       throw new Error("Provider is not defined in the default configuration");
     }
 
-    let aiModel;
-    switch (provider.toLowerCase()) {
-      case "openai":
-        aiModel = openai(model);
-        break;
-      case "anthropic":
-        const anthropicClient = createAnthropic({
-          apiKey: process.env.ANTHROPIC_API_KEY!,
-        });
-        aiModel = anthropicClient(model);
-        break;
-      case "cohere":
-        const cohereClient = createCohere({
-          apiKey: process.env.COHERE_API_KEY!,
-        });
-        aiModel = cohereClient(model);
-        break;
-      case "mistral":
-        const mistralClient = createMistral({
-          apiKey: process.env.MISTRAL_API_KEY!,
-        });
-        aiModel = mistralClient(model);
-        break;
-      case "groq":
-        const groqClient = createOpenAI({
-          apiKey: process.env.GROQ_API_KEY!,
-        });
-        aiModel = groqClient(model);
-        break;
-      case "ollama":
-        aiModel = ollama("llama3.1");
-        break;
-      case "google-vertex":
-        throw new Error("Google Vertex AI is not currently supported");
-      default:
-        throw new Error(`Unsupported provider: ${provider}`);
-    }
+    const aiModel = await getAIModelClient(provider, model);
 
     const logEntry = {
       method: "POST",
@@ -127,7 +129,7 @@ export async function POST(
         async start(controller) {
           for await (const chunk of result.textStream) {
             const data = JSON.stringify({
-              id: "chatcmpl-" + Math.random().toString(36).substr(2, 9),
+              id: `chatcmpl-${Math.random().toString(36).substr(2, 9)}`,
               object: "chat.completion.chunk",
               created: Math.floor(Date.now() / 1000),
               model: model,
@@ -154,18 +156,17 @@ export async function POST(
           Connection: "keep-alive",
         },
       });
-    } else {
-      // For non-streaming requests, use the AI SDK
-      const result = await generateText({
-        model: aiModel,
-        messages,
-      });
-
-      logEntry.response = JSON.stringify(result);
-      await insertLog(logEntry);
-
-      return NextResponse.json(result);
     }
+    // For non-streaming requests, use the AI SDK
+    const result = await generateText({
+      model: aiModel,
+      messages,
+    });
+
+    logEntry.response = JSON.stringify(result);
+    await insertLog(logEntry);
+
+    return NextResponse.json(result);
   } catch (error) {
     console.error("Error in chat completion:", error);
     const errorMessage = error instanceof Error ? error.message : String(error);
@@ -249,7 +250,7 @@ async function testOpenAI() {
 async function testAnthropic() {
   try {
     const anthropicClient = createAnthropic({
-      apiKey: process.env.ANTHROPIC_API_KEY!,
+      apiKey: env.ANTHROPIC_API_KEY,
     });
     const model = anthropicClient("claude-3-haiku-20240307");
     const result = await generateText({
@@ -266,7 +267,7 @@ async function testAnthropic() {
 async function testCohere() {
   try {
     const cohereClient = createCohere({
-      apiKey: process.env.COHERE_API_KEY!,
+      apiKey: env.COHERE_API_KEY,
     });
     const model = cohereClient("command");
     const result = await generateText({
@@ -283,7 +284,7 @@ async function testCohere() {
 async function testMistral() {
   try {
     const mistralClient = createMistral({
-      apiKey: process.env.MISTRAL_API_KEY!,
+      apiKey: env.MISTRAL_API_KEY,
     });
     const model = mistralClient("mistral-small-latest");
     const result = await generateText({
@@ -300,7 +301,7 @@ async function testMistral() {
 async function testGroq() {
   try {
     const groqClient = createOpenAI({
-      apiKey: process.env.GROQ_API_KEY!,
+      apiKey: env.GROQ_API_KEY,
     });
     const model = groqClient("llama-3.1-70b-versatile");
     const result = await generateText({
