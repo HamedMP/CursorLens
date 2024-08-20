@@ -23,7 +23,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-import { debounce } from "lodash"; // Make sure to install lodash if not already installed
+import { debounce } from "lodash";
 
 interface Stats {
   totalLogs: number;
@@ -118,7 +118,7 @@ export default function Logs() {
                 disabled={isLoading}
               >
                 <RefreshCw
-                  className={cn("h-4 w-4", isLoading && "animate-spin")}
+                  className={cn("size-4", isLoading && "animate-spin")}
                 />
               </Button>
             </div>
