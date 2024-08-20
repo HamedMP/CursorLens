@@ -208,15 +208,43 @@ export async function updateDefaultConfiguration(
   });
 }
 
-export async function createConfiguration(
-  data: Partial<AIConfiguration>,
-): Promise<AIConfiguration> {
+export async function createConfiguration(config: Partial<AIConfiguration>) {
+  const {
+    name,
+    provider,
+    model,
+    temperature,
+    maxTokens,
+    topP,
+    frequencyPenalty,
+    presencePenalty,
+    isDefault,
+    apiKey,
+  } = config;
+
+  // TODO: Consider using Zod schemas for validation and potentially integrate
+  // https://github.com/vantezzen/auto-form for form generation and validation
+
+  // Guard clause to ensure required fields are present
+  if (!name || !provider || !model) {
+    throw new Error("Name, provider, and model are required fields");
+  }
+
   const newConfig = await prisma.aIConfiguration.create({
     data: {
-      ...data,
-      isDefault: false, // Ensure new configurations are not default by default
-    } as AIConfiguration,
+      name,
+      provider,
+      model,
+      temperature: temperature,
+      maxTokens: maxTokens,
+      topP: topP,
+      frequencyPenalty: frequencyPenalty,
+      presencePenalty: presencePenalty,
+      isDefault: isDefault,
+      apiKey: apiKey,
+    },
   });
+
   return serializeDates(newConfig);
 }
 

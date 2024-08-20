@@ -93,6 +93,11 @@ export default function ConfigurationsPage() {
   }, []);
 
   const handleCreateConfig = useCallback(async () => {
+    if (!newConfig.name || !newConfig.provider || !newConfig.model) {
+      setError("Name, provider, and model are required fields");
+      return;
+    }
+
     try {
       await createConfiguration(newConfig);
       setIsDialogOpen(false);
@@ -100,7 +105,21 @@ export default function ConfigurationsPage() {
       fetchConfigurations();
     } catch (error) {
       console.error("Error creating configuration:", error);
-      setError("Error creating configuration");
+      // TODO: Implement better error handling and user feedback
+      // - Handle specific errors (e.g., unique constraint violations)
+      // - Display error messages in the UI (e.g., using a toast notification)
+      // - Highlight fields with errors
+      // - Prevent dialog from closing on error
+      if (
+        error instanceof Error &&
+        error.message.includes("Unique constraint failed")
+      ) {
+        setError(
+          "A configuration with this name already exists. Please choose a different name.",
+        );
+      } else {
+        setError("Error creating configuration. Please try again.");
+      }
     }
   }, [newConfig, fetchConfigurations]);
 
@@ -359,6 +378,9 @@ export default function ConfigurationsPage() {
                 )}
               </div>
             </div>
+            {error && (
+              <div className="mb-4 mt-2 text-sm text-red-500">{error}</div>
+            )}
             <div className="mt-4 flex justify-end">
               <Button onClick={handleCreateConfig}>Create Configuration</Button>
             </div>
