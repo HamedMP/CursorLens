@@ -16,6 +16,7 @@ export const env = createEnv({
     COHERE_API_KEY: z.string().optional(),
     MISTRAL_API_KEY: z.string().optional(),
     GROQ_API_KEY: z.string().optional(),
+    OPENROUTER_API_KEY: z.string().optional(),
   },
 
   /**
@@ -39,6 +40,7 @@ export const env = createEnv({
     COHERE_API_KEY: process.env.COHERE_API_KEY,
     MISTRAL_API_KEY: process.env.MISTRAL_API_KEY,
     GROQ_API_KEY: process.env.GROQ_API_KEY,
+    OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY,
     // NEXT_PUBLIC_CLIENTVAR: process.env.NEXT_PUBLIC_CLIENTVAR,
   },
   /**

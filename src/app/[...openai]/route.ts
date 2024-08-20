@@ -49,6 +49,17 @@ async function getAIModelClient(provider: string, model: string) {
       return ollama("llama3.1");
     case "google-vertex":
       throw new Error("Google Vertex AI is not currently supported");
+    case "openrouter": {
+      const openrouterClient = createOpenAI({
+        baseURL: "https://openrouter.ai/api/v1",
+        apiKey: env.OPENROUTER_API_KEY,
+        headers: {
+          "HTTP-Referer": "https://www.cursorlens.com",
+          "X-Title": "CursorLens",
+        },
+      });
+      return openrouterClient(model);
+    }
     default:
       throw new Error(`Unsupported provider: ${provider}`);
   }
