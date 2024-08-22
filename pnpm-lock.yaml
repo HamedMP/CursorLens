@@ -12,8 +12,8 @@ importers:
         specifier: ^0.0.17
         version: 0.0.17(zod@3.23.8)
       '@ai-sdk/anthropic':
-        specifier: ^0.0.41
-        version: 0.0.41(zod@3.23.8)
+        specifier: ^0.0.46
+        version: 0.0.46(zod@3.23.8)
       '@ai-sdk/cohere':
         specifier: ^0.0.17
         version: 0.0.17(zod@3.23.8)
@@ -177,8 +177,8 @@ packages:
     peerDependencies:
       zod: ^3.0.0
 
-  '@ai-sdk/anthropic@0.0.41':
-    resolution: {integrity: sha512-ZGH0Xah9II4jEzDm/z+9G6qf0jC2vWRBURBDTWdQlVUI4COOMd8fmTrqwZrQuAl/y72vYakG5k2AKpJSnY6MeA==}
+  '@ai-sdk/anthropic@0.0.46':
+    resolution: {integrity: sha512-44tU2iXrMQmEv+UNZ7Yj9Vl8BM+emRPpDxC2ae94TEEZxyJiCzum6rZ1alc8n5Yq1t22S5JxhlGwpOT5+wV4zQ==}
     engines: {node: '>=18'}
     peerDependencies:
       zod: ^3.0.0
@@ -3968,10 +3968,10 @@ snapshots:
     transitivePeerDependencies:
       - aws-crt
 
-  '@ai-sdk/anthropic@0.0.41(zod@3.23.8)':
+  '@ai-sdk/anthropic@0.0.46(zod@3.23.8)':
     dependencies:
-      '@ai-sdk/provider': 0.0.19
-      '@ai-sdk/provider-utils': 1.0.11(zod@3.23.8)
+      '@ai-sdk/provider': 0.0.21
+      '@ai-sdk/provider-utils': 1.0.15(zod@3.23.8)
       zod: 3.23.8
 
   '@ai-sdk/cohere@0.0.17(zod@3.23.8)':
