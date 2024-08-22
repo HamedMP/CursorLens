@@ -27,6 +27,12 @@ async function getAIModelClient(provider: string, model: string) {
       });
       return anthropicClient(model);
     }
+    case "anthropiccached": {
+      const anthropicClient = createAnthropic({
+        apiKey: env.ANTHROPIC_API_KEY,
+      });
+      return anthropicClient(model, { cacheControl: true });
+    }
     case "cohere": {
       const cohereClient = createCohere({
         apiKey: env.COHERE_API_KEY,
@@ -100,11 +106,31 @@ export async function POST(
 
     const aiModel = await getAIModelClient(provider, model);
 
+    let modifiedMessages = messages;
+
+    if (provider.toLowerCase() === "anthropiccached") {
+      modifiedMessages = messages.map((message: any) => {
+        if (message.name === "potential_context") {
+          return {
+            ...message,
+            experimental_providerMetadata: {
+              anthropic: { cacheControl: { type: "ephemeral" } },
+            },
+          };
+        }
+        return message;
+      });
+    }
+
     const logEntry = {
       method: "POST",
       url: `/api/${endpoint}`,
       headers: JSON.stringify(Object.fromEntries(request.headers)),
-      body: JSON.stringify(body),
+      body: JSON.stringify({
+        ...body,
+        messages: modifiedMessages,
+        model: model,
+      }),
       response: "",
       timestamp: new Date(),
       metadata: {
@@ -122,15 +148,23 @@ export async function POST(
     if (stream) {
       const result = await streamText({
         model: aiModel,
-        messages,
+        messages: modifiedMessages,
         maxTokens: provider === "anthropic" ? 8192 : undefined,
-        async onFinish({ text, toolCalls, toolResults, usage, finishReason }) {
+        async onFinish({
+          text,
+          toolCalls,
+          toolResults,
+          usage,
+          finishReason,
+          ...otherProps
+        }) {
           logEntry.response = JSON.stringify({
             text,
             toolCalls,
             toolResults,
             usage,
             finishReason,
+            ...otherProps,
           });
           await insertLog(logEntry);
         },
@@ -234,6 +268,8 @@ export async function GET(
     return testOpenAI();
   } else if (endpoint === "test/anthropic") {
     return testAnthropic();
+  } else if (endpoint === "test/anthropiccached") {
+    return testAnthropicCached();
   } else if (endpoint === "test/cohere") {
     return testCohere();
   } else if (endpoint === "test/mistral") {
@@ -255,6 +291,25 @@ async function testOpenAI() {
     return NextResponse.json({ provider: "OpenAI", result });
   } catch (error) {
     console.error("Error testing OpenAI:", error);
+    return NextResponse.json({ error: String(error) }, { status: 500 });
+  }
+}
+
+async function testAnthropicCached() {
+  try {
+    const model = anthropic("claude-3-5-sonnet-20240620", {
+      cacheControl: true,
+    });
+
+    const result = await generateText({
+      model,
+      messages: [
+        { role: "user", content: 'Say "Hello from Anthropic and Vercel"' },
+      ],
+    });
+    return NextResponse.json({ provider: "Anthropic Cached", result });
+  } catch (error) {
+    console.error("Error testing Anthropic:", error);
     return NextResponse.json({ error: String(error) }, { status: 500 });
   }
 }
