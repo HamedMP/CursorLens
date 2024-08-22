@@ -122,14 +122,25 @@ export async function POST(
       });
     }
 
+    const streamTextOptions = {
+      model: aiModel,
+      messages: modifiedMessages,
+      maxTokens: ["anthropic", "anthropiccached"].includes(
+        provider.toLowerCase(),
+      )
+        ? 8192
+        : undefined,
+      // Add other parameters from defaultConfig if needed
+    };
+
     const logEntry = {
       method: "POST",
       url: `/api/${endpoint}`,
       headers: JSON.stringify(Object.fromEntries(request.headers)),
       body: JSON.stringify({
         ...body,
-        messages: modifiedMessages,
-        model: model,
+        ...streamTextOptions,
+        model: model, // Use the model from defaultConfig
       }),
       response: "",
       timestamp: new Date(),
@@ -147,13 +158,7 @@ export async function POST(
 
     if (stream) {
       const result = await streamText({
-        model: aiModel,
-        messages: modifiedMessages,
-        maxTokens: ["anthropic", "anthropiccached"].includes(
-          provider.toLowerCase(),
-        )
-          ? 8192
-          : undefined,
+        ...streamTextOptions,
         async onFinish({
           text,
           toolCalls,
