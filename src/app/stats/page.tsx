@@ -32,30 +32,19 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Checkbox } from "@/components/ui/checkbox";
 
 interface Stats {
   totalLogs: number;
   totalTokens: number;
-  totalPromptTokens: number;
-  totalCompletionTokens: number;
-  perModelProviderStats: {
+  perModelStats: {
     [key: string]: {
       logs: number;
       tokens: number;
       promptTokens: number;
       completionTokens: number;
       cost: number;
-      provider: string;
-      model: string;
     };
   };
-  tokenUsageOverTime: {
-    date: string;
-    tokens: number;
-    promptTokens: number;
-    completionTokens: number;
-  }[];
 }
 
 const chartConfig = {
@@ -64,20 +53,12 @@ const chartConfig = {
     color: "hsl(var(--chart-1))",
   },
   tokens: {
-    label: "Total Tokens",
+    label: "Tokens",
     color: "hsl(var(--chart-2))",
-  },
-  promptTokens: {
-    label: "Input Tokens",
-    color: "hsl(var(--chart-3))",
-  },
-  completionTokens: {
-    label: "Output Tokens",
-    color: "hsl(var(--chart-4))",
   },
   cost: {
     label: "Cost ($)",
-    color: "hsl(var(--chart-5))",
+    color: "hsl(var(--chart-3))",
   },
 };
 
@@ -90,11 +71,6 @@ export default function StatsPage() {
   const [tokenUsageOverTime, setTokenUsageOverTime] = useState<
     { date: string; tokens: number }[]
   >([]);
-  const [selectedMetrics, setSelectedMetrics] = useState<string[]>([
-    "logs",
-    "tokens",
-    "cost",
-  ]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -105,30 +81,25 @@ export default function StatsPage() {
           getConfigurationCosts(),
         ]);
 
-        const perModelProviderStats: Stats["perModelProviderStats"] = {};
+        const perModelStats: Stats["perModelStats"] = {};
         for (const config of configData) {
-          perModelProviderStats[`${config.provider}:${config.model}`] = {
+          perModelStats[config.model] = {
             logs: 0,
             tokens: 0,
             promptTokens: 0,
             completionTokens: 0,
             cost: 0,
-            provider: config.provider,
-            model: config.model,
           };
         }
 
-        for (const [key, modelStats] of Object.entries(
-          statsData.perModelProviderStats,
+        for (const [model, modelStats] of Object.entries(
+          statsData.perModelStats,
         )) {
-          const [provider, model] = key.split(":");
-          const costData = costsData.find(
-            (c) => c.provider === provider && c.model === model,
-          );
+          const costData = costsData.find((c) => c.model === model);
           const inputTokenCost = costData?.inputTokenCost || 0;
           const outputTokenCost = costData?.outputTokenCost || 0;
 
-          perModelProviderStats[key] = {
+          perModelStats[model] = {
             ...modelStats,
             cost:
               modelStats.promptTokens * inputTokenCost +
@@ -139,10 +110,7 @@ export default function StatsPage() {
         setStats({
           totalLogs: statsData.totalLogs,
           totalTokens: statsData.totalTokens,
-          totalPromptTokens: statsData.totalPromptTokens,
-          totalCompletionTokens: statsData.totalCompletionTokens,
-          perModelProviderStats,
-          tokenUsageOverTime: statsData.tokenUsageOverTime,
+          perModelStats,
         });
         setTokenUsageOverTime(statsData.tokenUsageOverTime);
         setConfigurations(configData);
@@ -155,14 +123,6 @@ export default function StatsPage() {
     };
     fetchData();
   }, [timeFilter]);
-
-  const handleMetricToggle = (metric: string) => {
-    setSelectedMetrics((prev) =>
-      prev.includes(metric)
-        ? prev.filter((m) => m !== metric)
-        : [...prev, metric],
-    );
-  };
 
   if (loading) {
     return (
@@ -211,21 +171,18 @@ export default function StatsPage() {
 
   if (!stats) return null;
 
-  const chartData = Object.entries(stats.perModelProviderStats).map(
-    ([key, data]) => ({
-      provider: data.provider,
-      model: data.model,
+  const chartData = Object.entries(stats.perModelStats).map(
+    ([model, data]) => ({
+      model,
       logs: data.logs,
       tokens: data.tokens,
-      promptTokens: data.promptTokens,
-      completionTokens: data.completionTokens,
       cost: data.cost,
     }),
   );
 
-  const pieChartData = Object.entries(stats.perModelProviderStats).map(
-    ([key, data]) => ({
-      name: key,
+  const pieChartData = Object.entries(stats.perModelStats).map(
+    ([model, data]) => ({
+      name: model,
       value: data.logs,
     }),
   );
@@ -281,7 +238,7 @@ export default function StatsPage() {
           <CardContent>
             <p className="text-3xl font-semibold">
               $
-              {Object.values(stats.perModelProviderStats)
+              {Object.values(stats.perModelStats)
                 .reduce((sum, data) => sum + data.cost, 0)
                 .toFixed(2)}
             </p>
@@ -289,27 +246,9 @@ export default function StatsPage() {
         </Card>
       </div>
 
-      <div className="mb-4 flex flex-wrap gap-4">
-        {Object.entries(chartConfig).map(([key, config]) => (
-          <div key={key} className="flex items-center space-x-2">
-            <Checkbox
-              id={key}
-              checked={selectedMetrics.includes(key)}
-              onCheckedChange={() => handleMetricToggle(key)}
-            />
-            <label
-              htmlFor={key}
-              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-            >
-              {config.label}
-            </label>
-          </div>
-        ))}
-      </div>
-
       <Card className="mb-8">
         <CardHeader>
-          <CardTitle>Per Model and Provider Statistics</CardTitle>
+          <CardTitle>Per Model Statistics</CardTitle>
         </CardHeader>
         <CardContent>
           <ChartContainer config={chartConfig} className="h-[400px] w-full">
@@ -329,64 +268,26 @@ export default function StatsPage() {
                   orientation="right"
                   stroke="currentColor"
                 />
-                <ChartTooltip
-                  content={({ active, payload }) => {
-                    if (active && payload && payload.length) {
-                      return (
-                        <div className="rounded-lg bg-white p-2 shadow-md">
-                          <p className="font-bold">{`${payload[0].payload.provider}: ${payload[0].payload.model}`}</p>
-                          {payload.map((entry) => (
-                            <p key={entry.name} style={{ color: entry.color }}>
-                              {`${entry.name}: ${entry.value}`}
-                            </p>
-                          ))}
-                        </div>
-                      );
-                    }
-                    return null;
-                  }}
-                />
+                <ChartTooltip content={<ChartTooltipContent />} />
                 <ChartLegend content={<ChartLegendContent />} />
-                {selectedMetrics.includes("logs") && (
-                  <Bar
-                    yAxisId="left"
-                    dataKey="logs"
-                    fill="var(--color-logs)"
-                    radius={4}
-                  />
-                )}
-                {selectedMetrics.includes("tokens") && (
-                  <Bar
-                    yAxisId="left"
-                    dataKey="tokens"
-                    fill="var(--color-tokens)"
-                    radius={4}
-                  />
-                )}
-                {selectedMetrics.includes("promptTokens") && (
-                  <Bar
-                    yAxisId="left"
-                    dataKey="promptTokens"
-                    fill="var(--color-promptTokens)"
-                    radius={4}
-                  />
-                )}
-                {selectedMetrics.includes("completionTokens") && (
-                  <Bar
-                    yAxisId="left"
-                    dataKey="completionTokens"
-                    fill="var(--color-completionTokens)"
-                    radius={4}
-                  />
-                )}
-                {selectedMetrics.includes("cost") && (
-                  <Bar
-                    yAxisId="right"
-                    dataKey="cost"
-                    fill="var(--color-cost)"
-                    radius={4}
-                  />
-                )}
+                <Bar
+                  yAxisId="left"
+                  dataKey="logs"
+                  fill="var(--color-logs)"
+                  radius={4}
+                />
+                <Bar
+                  yAxisId="left"
+                  dataKey="tokens"
+                  fill="var(--color-tokens)"
+                  radius={4}
+                />
+                <Bar
+                  yAxisId="right"
+                  dataKey="cost"
+                  fill="var(--color-cost)"
+                  radius={4}
+                />
               </BarChart>
             </ResponsiveContainer>
           </ChartContainer>
@@ -420,7 +321,7 @@ export default function StatsPage() {
 
       <Card className="mb-8">
         <CardHeader>
-          <CardTitle>Model and Provider Usage Distribution</CardTitle>
+          <CardTitle>Model Usage Distribution</CardTitle>
         </CardHeader>
         <CardContent>
           <ChartContainer config={chartConfig} className="h-[400px] w-full">

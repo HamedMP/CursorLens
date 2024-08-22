@@ -36,11 +36,6 @@ export default function LogDetails({ logId }: LogDetailsProps) {
     null,
   );
   const searchParams = useSearchParams();
-  const [expandedSections, setExpandedSections] = useState({
-    response: true,
-    body: true,
-    headers: true,
-  });
 
   useEffect(() => {
     const fetchLog = async () => {
@@ -71,13 +66,6 @@ export default function LogDetails({ logId }: LogDetailsProps) {
     };
     loadTheme();
   }, [logId, searchParams]);
-
-  const toggleSection = (section: "response" | "body" | "headers") => {
-    setExpandedSections((prev) => ({
-      ...prev,
-      [section]: !prev[section],
-    }));
-  };
 
   if (error) {
     return (
@@ -261,30 +249,12 @@ export default function LogDetails({ logId }: LogDetailsProps) {
             )}
           </Button>
         )}
-
-        {(isExpanded || !isExpandable) && (
-          <SyntaxHighlighter
-            language="json"
-            style={themes.tomorrow}
-            customStyle={{
-              margin: 0,
-              marginBottom: "1rem",
-              padding: "1rem",
-              borderRadius: "0.25rem",
-              fontSize: "0.875rem",
-            }}
-          >
-            {jsonString}
-          </SyntaxHighlighter>
-        )}
-
         {parsedContent && parsedContent.text && (
           <div className="mb-4">
             <h4 className="mb-2 text-lg font-semibold">AI Response</h4>
             {renderAIResponse(parsedContent)}
           </div>
         )}
-
         {parsedContent && parsedContent.messages && (
           <div className="mb-4">
             <h4 className="mb-2 text-lg font-semibold">
@@ -292,6 +262,20 @@ export default function LogDetails({ logId }: LogDetailsProps) {
             </h4>
             {renderMessages(parsedContent.messages)}
           </div>
+        )}
+        {(isExpanded || !isExpandable) && (
+          <SyntaxHighlighter
+            language="json"
+            style={themes.tomorrow}
+            customStyle={{
+              margin: 0,
+              padding: "1rem",
+              borderRadius: "0.25rem",
+              fontSize: "0.875rem",
+            }}
+          >
+            {jsonString}
+          </SyntaxHighlighter>
         )}
       </div>
     );
@@ -309,69 +293,30 @@ export default function LogDetails({ logId }: LogDetailsProps) {
         <p className="mb-4 text-sm text-gray-500">{log.timestamp}</p>
 
         <Card className="mt-4">
-          <CardHeader className="flex flex-row items-center justify-between">
+          <CardHeader>
             <CardTitle className="text-base">Response</CardTitle>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => toggleSection("response")}
-            >
-              {expandedSections.response ? (
-                <ChevronUp className="h-4 w-4" />
-              ) : (
-                <ChevronDown className="h-4 w-4" />
-              )}
-            </Button>
           </CardHeader>
-          {expandedSections.response && (
-            <CardContent>
-              <JsonHighlight content={log.response} isExpandable={true} />
-            </CardContent>
-          )}
+          <CardContent>
+            <JsonHighlight content={log.response} isExpandable={true} />
+          </CardContent>
         </Card>
 
         <Card className="mt-4">
-          <CardHeader className="flex flex-row items-center justify-between">
+          <CardHeader>
             <CardTitle className="text-base">Body</CardTitle>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => toggleSection("body")}
-            >
-              {expandedSections.body ? (
-                <ChevronUp className="h-4 w-4" />
-              ) : (
-                <ChevronDown className="h-4 w-4" />
-              )}
-            </Button>
           </CardHeader>
-          {expandedSections.body && (
-            <CardContent>
-              <JsonHighlight content={log.body} isExpandable={true} />
-            </CardContent>
-          )}
+          <CardContent>
+            <JsonHighlight content={log.body} isExpandable={true} />
+          </CardContent>
         </Card>
 
         <Card className="mt-4">
-          <CardHeader className="flex flex-row items-center justify-between">
+          <CardHeader>
             <CardTitle className="text-base">Headers</CardTitle>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => toggleSection("headers")}
-            >
-              {expandedSections.headers ? (
-                <ChevronUp className="h-4 w-4" />
-              ) : (
-                <ChevronDown className="h-4 w-4" />
-              )}
-            </Button>
           </CardHeader>
-          {expandedSections.headers && (
-            <CardContent>
-              <JsonHighlight content={log.headers} />
-            </CardContent>
-          )}
+          <CardContent>
+            <JsonHighlight content={log.headers} />
+          </CardContent>
         </Card>
       </CardContent>
     </Card>
