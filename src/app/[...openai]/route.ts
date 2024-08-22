@@ -149,7 +149,11 @@ export async function POST(
       const result = await streamText({
         model: aiModel,
         messages: modifiedMessages,
-        maxTokens: provider === "anthropic" ? 8192 : undefined,
+        maxTokens: ["anthropic", "anthropiccached"].includes(
+          provider.toLowerCase(),
+        )
+          ? 8192
+          : undefined,
         async onFinish({
           text,
           toolCalls,
