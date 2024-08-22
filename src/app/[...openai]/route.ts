@@ -112,6 +112,7 @@ export async function POST(
       const result = await streamText({
         model: aiModel,
         messages,
+        maxTokens: provider === "anthropic" ? 8192 : undefined,
         async onFinish({ text, toolCalls, toolResults, usage, finishReason }) {
           logEntry.response = JSON.stringify({
             text,
