@@ -28,7 +28,6 @@ async function getAIModelClient(provider: string, model: string) {
       return anthropicClient(model);
     }
     case "anthropiccached": {
-      console.log("anthropiccached");
       const anthropicClient = createAnthropic({
         apiKey: env.ANTHROPIC_API_KEY,
       });
@@ -258,6 +257,8 @@ export async function GET(
     return testOpenAI();
   } else if (endpoint === "test/anthropic") {
     return testAnthropic();
+  } else if (endpoint === "test/anthropiccached") {
+    return testAnthropicCached();
   } else if (endpoint === "test/cohere") {
     return testCohere();
   } else if (endpoint === "test/mistral") {
@@ -279,6 +280,25 @@ async function testOpenAI() {
     return NextResponse.json({ provider: "OpenAI", result });
   } catch (error) {
     console.error("Error testing OpenAI:", error);
+    return NextResponse.json({ error: String(error) }, { status: 500 });
+  }
+}
+
+async function testAnthropicCached() {
+  try {
+    const model = anthropic("claude-3-5-sonnet-20240620", {
+      cacheControl: true,
+    });
+
+    const result = await generateText({
+      model,
+      messages: [
+        { role: "user", content: 'Say "Hello from Anthropic and Vercel"' },
+      ],
+    });
+    return NextResponse.json({ provider: "Anthropic Cached", result });
+  } catch (error) {
+    console.error("Error testing Anthropic:", error);
     return NextResponse.json({ error: String(error) }, { status: 500 });
   }
 }
