@@ -60,6 +60,62 @@ For full details on each step, please see the [Installation Guide](https://www.c
 
 ![Cursor Lens Stats](public/cl-stats.jpeg)
 
+## Prompt caching with Anthropic (v0.1.2):
+
+1. Create a new config on `/configuration` page, choose `antropicCached` with Sonnet 3.5. Name it as you like.
+2. Mark it as default.
+3. Use Cursor with CursorLens as normal. The system and context messages in `CMD+L` and `CMD+i` chats will be cached from now on.
+
+> Note that TTL for the cache is 5 minutes.
+
+![Add a new config with Antropic Cached](public/anthropicCashedXConfig.png)
+![Example Cache creation response](public/ant-cache-create.png)
+![Example Cache read response](public/ant-cache-read.png)
+
+## [0.1.2-alpha] - 2024-08-22
+
+### ⚠️ ALPHA RELEASE
+
+### Added
+
+- Add Anthropic Cache support for context messages
+- Increase Token limit for Anthropic to 8192 tokens
+- Improved statistics page: Now you can select the data points you want to see
+- Log details are now collapsible
+- Full response is captured in the logs
+
+[View release on GitHub](https://github.com/HamedMP/CursorLens/tree/v0.1.2-alpha)
+
+## [0.1.1-alpha] - 2024-08-18
+
+### ⚠️ ALPHA RELEASE
+
+### Added
+
+- Added support for Mistral AI, Cohere, Groq, and Ollama
+
+## [0.1.0-alpha] - 2024-08-17
+
+This is the initial alpha release of CursorLens. As an alpha version, it may contain bugs and is not yet feature-complete. Use with caution in non-production environments.
+
+### Added
+
+- Initial project setup with Next.js
+- Basic proxy functionality between Cursor and AI providers (OpenAI, Anthropic)
+- Simple dashboard for viewing AI interaction logs
+- Token usage tracking for OpenAI and Anthropic models
+- Basic cost estimation based on token usage
+- Support for PostgreSQL database with Prisma ORM
+- Environment variable configuration for API keys and database connection
+- Basic error handling and logging
+
+### Known Issues
+
+- Limited error handling for edge cases
+- Incomplete test coverage
+- Basic UI with limited customization options
+- Potential performance issues with large volumes of requests
+
 ## Contributing
 
 We welcome contributions to Cursor Lens! Please see our [Contributing Guide](CONTRIBUTING.md) for more details on how to get started.
