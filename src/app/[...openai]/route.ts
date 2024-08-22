@@ -109,6 +109,10 @@ export async function POST(
     let modifiedMessages = messages;
 
     if (provider.toLowerCase() === "anthropiccached") {
+      const hasPotentialContext = messages.some(
+        (message: any) => message.name === "potential_context",
+      );
+
       modifiedMessages = messages.map((message: any) => {
         if (message.name === "potential_context") {
           return {
@@ -120,6 +124,15 @@ export async function POST(
         }
         return message;
       });
+
+      if (!hasPotentialContext && modifiedMessages.length >= 2) {
+        modifiedMessages[1] = {
+          ...modifiedMessages[1],
+          experimental_providerMetadata: {
+            anthropic: { cacheControl: { type: "ephemeral" } },
+          },
+        };
+      }
     }
 
     const streamTextOptions = {
