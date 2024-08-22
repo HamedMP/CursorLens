@@ -151,13 +151,21 @@ export async function POST(
         model: aiModel,
         messages: modifiedMessages,
         maxTokens: provider === "anthropic" ? 8192 : undefined,
-        async onFinish({ text, toolCalls, toolResults, usage, finishReason }) {
+        async onFinish({
+          text,
+          toolCalls,
+          toolResults,
+          usage,
+          finishReason,
+          ...otherProps
+        }) {
           logEntry.response = JSON.stringify({
             text,
             toolCalls,
             toolResults,
             usage,
             finishReason,
+            ...otherProps,
           });
           await insertLog(logEntry);
         },
