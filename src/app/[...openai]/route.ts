@@ -27,6 +27,13 @@ async function getAIModelClient(provider: string, model: string) {
       });
       return anthropicClient(model);
     }
+    case "anthropiccached": {
+      console.log("anthropiccached");
+      const anthropicClient = createAnthropic({
+        apiKey: env.ANTHROPIC_API_KEY,
+      });
+      return anthropicClient(model, { cacheControl: true });
+    }
     case "cohere": {
       const cohereClient = createCohere({
         apiKey: env.COHERE_API_KEY,
@@ -100,11 +107,31 @@ export async function POST(
 
     const aiModel = await getAIModelClient(provider, model);
 
+    let modifiedMessages = messages;
+
+    if (provider.toLowerCase() === "anthropiccached") {
+      modifiedMessages = messages.map((message: any) => {
+        if (message.name === "potential_context") {
+          return {
+            ...message,
+            experimental_providerMetadata: {
+              anthropic: { cacheControl: { type: "ephemeral" } },
+            },
+          };
+        }
+        return message;
+      });
+    }
+
     const logEntry = {
       method: "POST",
       url: `/api/${endpoint}`,
       headers: JSON.stringify(Object.fromEntries(request.headers)),
-      body: JSON.stringify(body),
+      body: JSON.stringify({
+        ...body,
+        messages: modifiedMessages,
+        model: model,
+      }),
       response: "",
       timestamp: new Date(),
       metadata: {
@@ -122,7 +149,7 @@ export async function POST(
     if (stream) {
       const result = await streamText({
         model: aiModel,
-        messages,
+        messages: modifiedMessages,
         maxTokens: provider === "anthropic" ? 8192 : undefined,
         async onFinish({ text, toolCalls, toolResults, usage, finishReason }) {
           logEntry.response = JSON.stringify({
