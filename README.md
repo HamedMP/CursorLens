@@ -58,7 +58,7 @@ For full details on each step, please see the [Installation Guide](https://www.c
 
 ## Stats page
 
-![Cursor Lens Stats](public/cl-stats.png)
+![Cursor Lens Stats](public/cl-stats.jpeg)
 
 ## Contributing
 
