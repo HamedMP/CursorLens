@@ -81,10 +81,11 @@ For full details on each step, please see the [Installation Guide](https://www.c
 - Add Anthropic Cache support for context messages
 - Increase Token limit for Anthropic to 8192 tokens
 - Improved statistics page: Now you can select the data points you want to see
+
+### Improved and fixed
+
 - Log details are now collapsible
 - Full response is captured in the logs
-
-[View release on GitHub](https://github.com/HamedMP/CursorLens/tree/v0.1.2-alpha)
 
 ## [0.1.1-alpha] - 2024-08-18
 
@@ -115,6 +116,7 @@ This is the initial alpha release of CursorLens. As an alpha version, it may con
 - Incomplete test coverage
 - Basic UI with limited customization options
 - Potential performance issues with large volumes of requests
+- Cost calculation for cached messages in Anthropic are not correct
 
 ## Contributing
 
