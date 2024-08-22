@@ -75,12 +75,15 @@ export async function getStats(timeFilter = "all"): Promise<{
   totalTokens: number;
   totalPromptTokens: number;
   totalCompletionTokens: number;
-  perModelStats: {
+  perModelProviderStats: {
     [key: string]: {
       logs: number;
       tokens: number;
       promptTokens: number;
       completionTokens: number;
+      cost: number;
+      provider: string;
+      model: string;
     };
   };
   tokenUsageOverTime: {
@@ -115,14 +118,19 @@ export async function getStats(timeFilter = "all"): Promise<{
     },
   });
 
-  const perModelStats: {
+  const perModelProviderStats: {
     [key: string]: {
       logs: number;
       tokens: number;
       promptTokens: number;
       completionTokens: number;
+      cost: number;
+      provider: string;
+      model: string;
     };
   } = {};
+
+  const configCosts = await getConfigurationCosts();
 
   let totalTokens = 0;
   let totalPromptTokens = 0;
@@ -137,24 +145,42 @@ export async function getStats(timeFilter = "all"): Promise<{
   for (const log of logs) {
     const metadata = log.metadata as Record<string, unknown>;
     const model = (metadata.model as string) || "unknown";
-    if (!perModelStats[model]) {
-      perModelStats[model] = {
+    const provider = (metadata.provider as string) || "unknown";
+    const key = `${provider}:${model}`;
+
+    if (!perModelProviderStats[key]) {
+      perModelProviderStats[key] = {
         logs: 0,
         tokens: 0,
         promptTokens: 0,
         completionTokens: 0,
+        cost: 0,
+        provider,
+        model,
       };
     }
-    perModelStats[model].logs += 1;
+    perModelProviderStats[key].logs += 1;
 
     try {
       const responseObj = JSON.parse(log.response);
       const tokens = responseObj.usage?.totalTokens || 0;
       const promptTokens = responseObj.usage?.promptTokens || 0;
       const completionTokens = responseObj.usage?.completionTokens || 0;
-      perModelStats[model].tokens += tokens;
-      perModelStats[model].promptTokens += promptTokens;
-      perModelStats[model].completionTokens += completionTokens;
+      perModelProviderStats[key].tokens += tokens;
+      perModelProviderStats[key].promptTokens += promptTokens;
+      perModelProviderStats[key].completionTokens += completionTokens;
+
+      // Calculate cost
+      const costConfig = configCosts.find(
+        (c) => c.provider === provider && c.model === model,
+      );
+      if (costConfig) {
+        const cost =
+          promptTokens * costConfig.inputTokenCost +
+          completionTokens * costConfig.outputTokenCost;
+        perModelProviderStats[key].cost += cost;
+      }
+
       totalTokens += tokens;
       totalPromptTokens += promptTokens;
       totalCompletionTokens += completionTokens;
@@ -185,7 +211,7 @@ export async function getStats(timeFilter = "all"): Promise<{
     totalTokens,
     totalPromptTokens,
     totalCompletionTokens,
-    perModelStats,
+    perModelProviderStats,
     tokenUsageOverTime,
   };
 }
