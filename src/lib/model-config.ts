@@ -135,19 +135,6 @@ export const getModelConfigurations = (): ModelConfigurations => ({
       isTemplate: false,
     },
   },
-  anthropicCached: {
-    "claude-3-5-sonnet-20240620": {
-      name: "Anthropic Claude 3.5 Sonnet (Cached)",
-      temperature: 0.7,
-      maxTokens: 200000,
-      topP: 1,
-      frequencyPenalty: 0,
-      presencePenalty: 0,
-      inputTokenCost: 0.000003,
-      outputTokenCost: 0.000015,
-      isTemplate: true,
-    },
-  },
   anthropic: {
     "claude-3-5-sonnet-20240620": {
       name: "Anthropic Claude 3.5 Sonnet",
