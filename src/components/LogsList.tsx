@@ -1,9 +1,13 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Badge } from "@/components/ui/badge";
+import { DollarSign, Clock, Hash, MessageSquare } from "lucide-react";
+import { getConfigurationCosts } from "@/app/actions";
 
 interface LogMetadata {
   topP: number;
@@ -14,16 +18,63 @@ interface LogMetadata {
   temperature: number;
   presencePenalty: number;
   frequencyPenalty: number;
-  userMessage?: string;
+  totalTokens: number;
+  totalCost: number;
+}
+
+interface Usage {
+  promptTokens: number;
+  completionTokens: number;
+  totalTokens: number;
+}
+
+interface Message {
+  role: string;
+  content: string;
+  name?: string;
+  experimental_providerMetadata?: {
+    anthropic?: {
+      cacheControl?: {
+        type: string;
+      };
+    };
+  };
+}
+
+interface RequestBody {
+  messages: Message[];
+  temperature: number;
+  user: string;
+  stream: boolean;
+}
+
+interface ResponseData {
+  text: string;
+  toolCalls: any[];
+  toolResults: any[];
+  usage: Usage;
+  finishReason: string;
+  rawResponse: {
+    headers: Record<string, string>;
+  };
+  warnings: string[];
+  experimental_providerMetadata?: {
+    anthropic?: {
+      cacheCreationInputTokens?: number;
+      cacheReadInputTokens?: number;
+    };
+  };
 }
 
 interface Log {
   id: string;
   method: string;
   url: string;
+  headers: string;
+  body: RequestBody; // This will be a JSON string containing RequestBody
+  response: ResponseData; // This will be a JSON string containing ResponseData
   timestamp: string;
   metadata: LogMetadata;
-  response: string;
 }
 
 interface LogsListProps {
@@ -37,51 +88,91 @@ const LogsListComponent: React.FC<LogsListProps> = ({
   onLogSelect,
   selectedLogId,
 }) => {
-  // Check if logs is an array and not empty
+  const getProviderColor = (provider: string) => {
+    const colors: Record<string, string> = {
+      anthropic: "bg-purple-100 text-purple-800 border-purple-300",
+      anthropicCached: "bg-indigo-100 text-indigo-800 border-indigo-300",
+      openai: "bg-green-100 text-green-800 border-green-300",
+      cohere: "bg-blue-100 text-blue-800 border-blue-300",
+      mistral: "bg-red-100 text-red-800 border-red-300",
+      groq: "bg-yellow-100 text-yellow-800 border-yellow-300",
+      ollama: "bg-orange-100 text-orange-800 border-orange-300",
+      other: "bg-gray-100 text-gray-800 border-gray-300",
+    };
+    return colors[provider] || "bg-gray-100 text-gray-800 border-gray-300";
+  };
+
   if (!Array.isArray(logs) || logs.length === 0) {
     return <p>No logs available.</p>;
   }
 
   return (
-    <ul className="space-y-2">
+    <div className="space-y-4">
       {logs.map((log) => {
-        // Parse the response here to get totalTokens
-        let totalTokens: number | string = "N/A";
-        try {
-          const responseObj = JSON.parse(log.response);
-          totalTokens = responseObj.usage?.totalTokens || "N/A";
-        } catch (error) {
-          console.error("Error parsing log response:", error);
-        }
-
-        const userMessage =
-          log.metadata.userMessage || log.url || "No message available";
+        const totalTokens = log.metadata.totalTokens || 0;
+        const totalCost = log.metadata.totalCost || 0;
+        const firstUserMessage =
+          log.body.messages.find((m) => m.role === "user" && !("name" in m))
+            ?.content || "No message available";
+        const truncatedMessage =
+          firstUserMessage.slice(0, 100) +
+          (firstUserMessage.length > 100 ? "..." : "");
+        const isSelected = selectedLogId === log.id;
+        const providerColorClass = getProviderColor(log.metadata.provider);
 
         return (
-          <li
+          <Card
             key={log.id}
-            className={`cursor-pointer rounded p-2 ${
-              selectedLogId === log.id
-                ? "border border-accent-foreground bg-accent"
-                : "hover:bg-secondary"
+            className={`mx-1 overflow-hidden transition-all duration-200 ${
+              isSelected
+                ? `border-r-4 shadow-lg border-${providerColorClass}`
+                : "hover:cursor-pointer hover:shadow-md"
             }`}
             onClick={() => onLogSelect(log.id)}
           >
-            <div className="font-semibold text-foreground">
-              {new Date(log.timestamp).toLocaleString()} - {log.method}
-            </div>
-            <div className="truncate text-sm text-muted-foreground">
-              {userMessage.slice(0, 50)}
-              {userMessage.length > 50 ? "..." : ""}
-            </div>
-            <div className="text-xs text-muted-foreground">
-              Provider: {log.metadata.provider} | Model: {log.metadata.model} |
-              Tokens: {totalTokens}
-            </div>
-          </li>
+            <CardHeader className={` ${providerColorClass}`}>
+              <CardTitle className="line-clamp-2 text-base font-medium">
+                {truncatedMessage}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-4">
+              <div className="mb-2 flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <Badge
+                    variant="outline"
+                    className={getProviderColor(log.metadata.provider)}
+                  >
+                    {log.metadata.provider}
+                  </Badge>
+                  <span className="text-sm font-medium">
+                    {log.metadata.model}
+                  </span>
+                </div>
+              </div>
+
+              <div className="mt-2 flex items-center justify-between">
+                <div className="flex w-full items-center justify-between space-x-4">
+                  <div className="flex items-center text-sm text-muted-foreground">
+                    <Clock className="mr-1 h-4 w-4" />
+                    <span>{new Date(log.timestamp).toLocaleString()}</span>
+                  </div>
+                  <div className="flex items-center text-green-600">
+                    <DollarSign className="mr-1 h-4 w-4" />
+                    <span className="text-sm font-medium">
+                      {totalCost.toFixed(4)}
+                    </span>
+                  </div>
+                  <div className="flex items-center">
+                    <Hash className="mr-1 h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm">{totalTokens} tokens</span>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         );
       })}
-    </ul>
+    </div>
   );
 };
 

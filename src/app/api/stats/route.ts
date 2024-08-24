@@ -1,21 +1,18 @@
-import { NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
+import { NextRequest, NextResponse } from "next/server";
+import { getStats } from "@/app/actions";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const { searchParams } = request.nextUrl;
+  const timeFilter = searchParams.get("timeFilter") || "all";
+
   try {
-    const logs = await prisma.log.findMany();
-    const totalLogs = logs.length;
-    const totalTokens = logs.reduce((sum, log) => {
-      const response = JSON.parse(log.response);
-      return sum + (response.usage?.total_tokens || 0);
-    }, 0);
-
-    return NextResponse.json({ totalLogs, totalTokens });
+    const stats = await getStats(timeFilter);
+    return NextResponse.json(stats);
   } catch (error) {
-    console.error('Error fetching stats:', error);
+    console.error("Error fetching stats:", error);
     return NextResponse.json(
-      { error: 'Error fetching stats' },
-      { status: 500 }
+      { error: "Error fetching stats" },
+      { status: 500 },
     );
   }
 }

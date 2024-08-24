@@ -1,49 +1,70 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { NextRequest, NextResponse } from "next/server";
+import {
+  getConfigurations,
+  createConfiguration,
+  updateConfiguration,
+  deleteConfiguration,
+} from "@/app/actions";
 
 export async function GET() {
   try {
-    if (!prisma) {
-      throw new Error('Prisma client is not initialized');
-    }
-    const configurations = await prisma.aIConfiguration.findMany();
+    const configurations = await getConfigurations();
     return NextResponse.json(configurations);
   } catch (error) {
-    console.error('Error fetching configurations:', error);
+    console.error("Error fetching configurations:", error);
     return NextResponse.json(
-      { error: 'Internal Server Error', details: error.message },
-      { status: 500 }
+      { error: "Error fetching configurations" },
+      { status: 500 },
     );
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const data = await request.json();
-    const { name, ...configData } = data;
+    const configData = await request.json();
+    const newConfig = await createConfiguration(configData);
+    return NextResponse.json(newConfig);
+  } catch (error) {
+    console.error("Error creating configuration:", error);
+    return NextResponse.json(
+      { error: "Error creating configuration" },
+      { status: 500 },
+    );
+  }
+}
 
-    if (configData.isDefault) {
-      // If the new configuration is set as default, unset the current default
-      await prisma.aIConfiguration.updateMany({
-        where: { isDefault: true },
-        data: { isDefault: false },
-      });
-    }
-
-    const updatedConfig = await prisma.aIConfiguration.upsert({
-      where: { name },
-      update: configData,
-      create: { name, ...configData },
-    });
-
+export async function PUT(request: NextRequest) {
+  try {
+    const { id, ...data } = await request.json();
+    const updatedConfig = await updateConfiguration(id, data);
     return NextResponse.json(updatedConfig);
   } catch (error) {
-    console.error('Error updating configuration:', error);
+    console.error("Error updating configuration:", error);
     return NextResponse.json(
-      { error: 'Internal Server Error' },
-      { status: 500 }
+      { error: "Error updating configuration" },
+      { status: 500 },
+    );
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  const { searchParams } = request.nextUrl;
+  const id = searchParams.get("id");
+  if (!id) {
+    return NextResponse.json(
+      { error: "Configuration ID is required" },
+      { status: 400 },
+    );
+  }
+
+  try {
+    await deleteConfiguration(id);
+    return NextResponse.json({ message: "Configuration deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting configuration:", error);
+    return NextResponse.json(
+      { error: "Error deleting configuration" },
+      { status: 500 },
     );
   }
 }

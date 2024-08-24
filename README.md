@@ -72,6 +72,17 @@ For full details on each step, please see the [Installation Guide](https://www.c
 ![Example Cache creation response](public/ant-cache-create.png)
 ![Example Cache read response](public/ant-cache-read.png)
 
+# Releases
+
+## Nightly - 2024-08-24
+
+- Add new cost calculation
+
+To run it, make sure to run:
+
+- `npx prisma seed db` and then
+- `pnpm run update-log-costs` to add cost info in metadata for all previous logs
+
 ## [0.1.2-alpha] - 2024-08-22
 
 ### ⚠️ ALPHA RELEASE
