@@ -14,6 +14,14 @@ import { Copy, ChevronDown, ChevronUp } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { toast } from "sonner";
 import { useSearchParams } from "next/navigation";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 interface Log {
   id: number;
@@ -23,6 +31,14 @@ interface Log {
   headers: string;
   body: string;
   response: string | null;
+  metadata: {
+    inputTokens: number;
+    outputTokens: number;
+    totalTokens: number;
+    inputCost: number;
+    outputCost: number;
+    totalCost: number;
+  };
 }
 
 interface LogDetailsProps {
@@ -139,7 +155,7 @@ export default function LogDetails({ logId }: LogDetailsProps) {
     isExpandable?: boolean;
   }) => {
     const [isExpanded, setIsExpanded] = useState(!isExpandable);
-    const parsedContent = parseJSON(content);
+    const parsedContent = content;
     const maskedContent = maskSensitiveInfo(parsedContent);
     const jsonString =
       JSON.stringify(maskedContent, null, 2) || "No data available";
@@ -297,8 +313,35 @@ export default function LogDetails({ logId }: LogDetailsProps) {
     );
   };
 
+  const renderUsageTable = (log: Log) => {
+    return (
+      <Table className="mb-4">
+        <TableHeader>
+          <TableRow>
+            <TableHead>Input Tokens</TableHead>
+            <TableHead>Output Tokens</TableHead>
+            <TableHead>Total Tokens</TableHead>
+            <TableHead>Input Cost</TableHead>
+            <TableHead>Output Cost</TableHead>
+            <TableHead>Total Cost</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          <TableRow>
+            <TableCell>{log.metadata.inputTokens}</TableCell>
+            <TableCell>{log.metadata.outputTokens}</TableCell>
+            <TableCell>{log.metadata.totalTokens}</TableCell>
+            <TableCell>${log.metadata.inputCost.toFixed(4)}</TableCell>
+            <TableCell>${log.metadata.outputCost.toFixed(4)}</TableCell>
+            <TableCell>${log.metadata.totalCost.toFixed(4)}</TableCell>
+          </TableRow>
+        </TableBody>
+      </Table>
+    );
+  };
+
   return (
-    <Card className="overflow-auto">
+    <Card className="overflow-auto border-0 shadow-none">
       <CardHeader className="">
         <CardTitle>Request Details</CardTitle>
       </CardHeader>
@@ -308,14 +351,15 @@ export default function LogDetails({ logId }: LogDetailsProps) {
         </h3>
         <p className="mb-4 text-sm text-gray-500">{log.timestamp}</p>
 
+        {renderUsageTable(log)}
+
         <Card className="mt-4">
-          <CardHeader className="flex flex-row items-center justify-between">
+          <CardHeader
+            className="flex cursor-pointer flex-row items-center justify-between"
+            onClick={() => toggleSection("response")}
+          >
             <CardTitle className="text-base">Response</CardTitle>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => toggleSection("response")}
-            >
+            <Button variant="ghost" size="sm">
               {expandedSections.response ? (
                 <ChevronUp className="h-4 w-4" />
               ) : (
@@ -325,19 +369,21 @@ export default function LogDetails({ logId }: LogDetailsProps) {
           </CardHeader>
           {expandedSections.response && (
             <CardContent>
-              <JsonHighlight content={log.response} isExpandable={true} />
+              <JsonHighlight
+                content={parseJSON(log.response)}
+                isExpandable={true}
+              />
             </CardContent>
           )}
         </Card>
 
         <Card className="mt-4">
-          <CardHeader className="flex flex-row items-center justify-between">
+          <CardHeader
+            className="flex cursor-pointer flex-row items-center justify-between"
+            onClick={() => toggleSection("body")}
+          >
             <CardTitle className="text-base">Body</CardTitle>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => toggleSection("body")}
-            >
+            <Button variant="ghost" size="sm">
               {expandedSections.body ? (
                 <ChevronUp className="h-4 w-4" />
               ) : (
@@ -347,19 +393,21 @@ export default function LogDetails({ logId }: LogDetailsProps) {
           </CardHeader>
           {expandedSections.body && (
             <CardContent>
-              <JsonHighlight content={log.body} isExpandable={true} />
+              <JsonHighlight
+                content={parseJSON(log.body)}
+                isExpandable={true}
+              />
             </CardContent>
           )}
         </Card>
 
         <Card className="mt-4">
-          <CardHeader className="flex flex-row items-center justify-between">
+          <CardHeader
+            className="flex cursor-pointer flex-row items-center justify-between"
+            onClick={() => toggleSection("headers")}
+          >
             <CardTitle className="text-base">Headers</CardTitle>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => toggleSection("headers")}
-            >
+            <Button variant="ghost" size="sm">
               {expandedSections.headers ? (
                 <ChevronUp className="h-4 w-4" />
               ) : (
@@ -369,7 +417,7 @@ export default function LogDetails({ logId }: LogDetailsProps) {
           </CardHeader>
           {expandedSections.headers && (
             <CardContent>
-              <JsonHighlight content={log.headers} />
+              <JsonHighlight content={parseJSON(log.headers)} />
             </CardContent>
           )}
         </Card>
