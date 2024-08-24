@@ -9,6 +9,7 @@ import { insertLog, getDefaultConfiguration } from "@/lib/db";
 import { type NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 import { env } from "@/env";
+import { calculateCost, getModelCost } from "@/lib/cost-calculator";
 
 const openaiClient = new OpenAI({
   apiKey: env.OPENAI_API_KEY,
@@ -150,12 +151,12 @@ export async function POST(
       method: "POST",
       url: `/api/${endpoint}`,
       headers: JSON.stringify(Object.fromEntries(request.headers)),
-      body: JSON.stringify({
+      body: {
         ...body,
         ...streamTextOptions,
-        model: model, // Use the model from defaultConfig
-      }),
-      response: "",
+        model: model,
+      },
+      response: {},
       timestamp: new Date(),
       metadata: {
         configId,
@@ -166,6 +167,12 @@ export async function POST(
         topP,
         frequencyPenalty,
         presencePenalty,
+        inputTokens: 0,
+        outputTokens: 0,
+        totalTokens: 0,
+        inputCost: 0,
+        outputCost: 0,
+        totalCost: 0,
       },
     };
 
@@ -180,14 +187,33 @@ export async function POST(
           finishReason,
           ...otherProps
         }) {
-          logEntry.response = JSON.stringify({
+          const inputTokens = usage?.promptTokens ?? 0;
+          const outputTokens = usage?.completionTokens ?? 0;
+          const totalTokens = usage?.totalTokens ?? 0;
+
+          const modelCost = await getModelCost(provider, model);
+          const inputCost = (inputTokens / 1000000) * modelCost.inputTokenCost;
+          const outputCost =
+            (outputTokens / 1000000) * modelCost.outputTokenCost;
+          const totalCost = inputCost + outputCost;
+
+          logEntry.response = {
             text,
             toolCalls,
             toolResults,
             usage,
             finishReason,
             ...otherProps,
-          });
+          };
+          logEntry.metadata = {
+            ...logEntry.metadata,
+            inputTokens,
+            outputTokens,
+            totalTokens,
+            inputCost,
+            outputCost,
+            totalCost,
+          };
           await insertLog(logEntry);
         },
       });
@@ -231,7 +257,25 @@ export async function POST(
       messages,
     });
 
+    const inputTokens = result.usage?.prompt_tokens ?? 0;
+    const outputTokens = result.usage?.completion_tokens ?? 0;
+    const totalTokens = result.usage?.total_tokens ?? 0;
+
+    const modelCost = await getModelCost(provider, model);
+    const inputCost = inputTokens * modelCost.inputTokenCost;
+    const outputCost = outputTokens * modelCost.outputTokenCost;
+    const totalCost = inputCost + outputCost;
+
     logEntry.response = JSON.stringify(result);
+    logEntry.metadata = {
+      ...logEntry.metadata,
+      inputTokens,
+      outputTokens,
+      totalTokens,
+      inputCost,
+      outputCost,
+      totalCost,
+    };
     await insertLog(logEntry);
 
     return NextResponse.json(result);

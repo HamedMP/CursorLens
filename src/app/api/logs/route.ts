@@ -1,36 +1,32 @@
 // app/api/logs/route.ts
-import { type NextRequest, NextResponse } from "next/server";
-import { getLogs } from "@/lib/db";
-import prisma from "@/lib/prisma";
+import { NextRequest, NextResponse } from "next/server";
+import { getLogs } from "@/app/actions";
+import prisma from "@/lib/prisma"; // Make sure to import prisma client
 
-export async function GET(request: NextRequest): Promise<NextResponse> {
+export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;
-  const filterHomepage = searchParams.get("filterHomepage") === "true";
-  const logs = await getLogs(filterHomepage);
-  return NextResponse.json(logs);
-}
+  const provider = searchParams.get("provider") || "all";
+  const startDate = searchParams.get("startDate") || "";
+  const endDate = searchParams.get("endDate") || "";
 
-interface LogData {
-  method: string;
-  url: string;
-  headers: string;
-  body: string;
-  response: string;
-  model: string;
-}
-
-export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
-    const { method, url, headers, body, response, model }: LogData =
-      await request.json();
+    const logs = await getLogs({ provider, startDate, endDate });
+    return NextResponse.json(logs);
+  } catch (error) {
+    console.error("Error fetching logs:", error);
+    return NextResponse.json({ error: "Error fetching logs" }, { status: 500 });
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const logData = await request.json();
     const log = await prisma.log.create({
       data: {
-        method,
-        url,
-        headers: JSON.stringify(headers),
-        body,
-        response,
-        metadata: { model },
+        ...logData,
+        metadata: logData.metadata as any,
+        response: logData.response as any, // Ensure response is stored as Json
+        timestamp: new Date(),
       },
     });
     return NextResponse.json(log);

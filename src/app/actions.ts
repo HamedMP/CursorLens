@@ -19,6 +19,10 @@ type LogMetadata = {
   temperature: number;
   presencePenalty: number;
   frequencyPenalty: number;
+  totalTokens: number;
+  inputTokens: number;
+  outputTokens: number;
+  totalCost: number;
 };
 
 export async function getLogs({
@@ -130,8 +134,6 @@ export async function getStats(timeFilter = "all"): Promise<{
     };
   } = {};
 
-  const configCosts = await getConfigurationCosts();
-
   let totalTokens = 0;
   let totalPromptTokens = 0;
   let totalCompletionTokens = 0;
@@ -143,9 +145,9 @@ export async function getStats(timeFilter = "all"): Promise<{
   }[] = [];
 
   for (const log of logs) {
-    const metadata = log.metadata as Record<string, unknown>;
-    const model = (metadata.model as string) || "unknown";
-    const provider = (metadata.provider as string) || "unknown";
+    const metadata = log.metadata as LogMetadata;
+    const model = metadata.model || "unknown";
+    const provider = metadata.provider || "unknown";
     const key = `${provider}:${model}`;
 
     if (!perModelProviderStats[key]) {
@@ -161,48 +163,35 @@ export async function getStats(timeFilter = "all"): Promise<{
     }
     perModelProviderStats[key].logs += 1;
 
-    try {
-      const responseObj = JSON.parse(log.response);
-      const tokens = responseObj.usage?.totalTokens || 0;
-      const promptTokens = responseObj.usage?.promptTokens || 0;
-      const completionTokens = responseObj.usage?.completionTokens || 0;
-      perModelProviderStats[key].tokens += tokens;
-      perModelProviderStats[key].promptTokens += promptTokens;
-      perModelProviderStats[key].completionTokens += completionTokens;
+    const tokens = metadata.totalTokens || 0;
+    const promptTokens = metadata.inputTokens || 0;
+    const completionTokens = metadata.outputTokens || 0;
+    const cost = metadata.totalCost || 0;
 
-      // Calculate cost
-      const costConfig = configCosts.find(
-        (c) => c.provider === provider && c.model === model,
-      );
-      if (costConfig) {
-        const cost =
-          promptTokens * costConfig.inputTokenCost +
-          completionTokens * costConfig.outputTokenCost;
-        perModelProviderStats[key].cost += cost;
-      }
+    perModelProviderStats[key].tokens += tokens;
+    perModelProviderStats[key].promptTokens += promptTokens;
+    perModelProviderStats[key].completionTokens += completionTokens;
+    perModelProviderStats[key].cost += cost;
 
-      totalTokens += tokens;
-      totalPromptTokens += promptTokens;
-      totalCompletionTokens += completionTokens;
+    totalTokens += tokens;
+    totalPromptTokens += promptTokens;
+    totalCompletionTokens += completionTokens;
 
-      const date = log.timestamp.toISOString().split("T")[0];
-      const existingEntry = tokenUsageOverTime.find(
-        (entry) => entry.date === date,
-      );
-      if (existingEntry) {
-        existingEntry.tokens += tokens;
-        existingEntry.promptTokens += promptTokens;
-        existingEntry.completionTokens += completionTokens;
-      } else {
-        tokenUsageOverTime.push({
-          date,
-          tokens,
-          promptTokens,
-          completionTokens,
-        });
-      }
-    } catch (error) {
-      console.error("Error parsing log response:", error);
+    const date = log.timestamp.toISOString().split("T")[0];
+    const existingEntry = tokenUsageOverTime.find(
+      (entry) => entry.date === date,
+    );
+    if (existingEntry) {
+      existingEntry.tokens += tokens;
+      existingEntry.promptTokens += promptTokens;
+      existingEntry.completionTokens += completionTokens;
+    } else {
+      tokenUsageOverTime.push({
+        date,
+        tokens,
+        promptTokens,
+        completionTokens,
+      });
     }
   }
 
@@ -318,3 +307,19 @@ export async function getConfigurationCosts(): Promise<ConfigurationCost[]> {
 }
 
 export { getModelConfigurations };
+
+export async function setDefaultConfiguration(configId: string): Promise<void> {
+  try {
+    await prisma.aIConfiguration.updateMany({
+      where: { isDefault: true },
+      data: { isDefault: false },
+    });
+    await prisma.aIConfiguration.update({
+      where: { id: configId },
+      data: { isDefault: true },
+    });
+  } catch (error) {
+    console.error("Error setting default configuration:", error);
+    throw error;
+  }
+}

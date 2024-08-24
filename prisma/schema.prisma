@@ -15,8 +15,8 @@ model Log {
   method    String
   url       String
   headers   String
-  body      String
-  response  String
+  body      Json
+  response  Json
   timestamp DateTime @default(now())
   metadata  Json
 
@@ -37,4 +37,16 @@ model AIConfiguration {
   apiKey            String?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
+}
+
+model ModelCost {
+  id              String   @id @default(cuid())
+  provider        String
+  model           String
+  inputTokenCost  Float
+  outputTokenCost Float
+  validFrom       DateTime
+  validTo         DateTime?
+
+  @@unique([provider, model, validFrom])
 }
