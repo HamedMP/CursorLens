@@ -13,7 +13,9 @@ import LogsList from "../components/LogsList";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Label } from "@/components/ui/label";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Copy } from "lucide-react";
+import { toast } from "sonner";
+
 import {
   getLogs,
   getStats,
@@ -22,13 +24,14 @@ import {
   createConfiguration,
 } from "./actions";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
 
 interface Log {
   id: string;
   method: string;
   url: string;
-  headers: string;
-  body: string;
+  headers: Record<string, string>;
+  body: any;
   response: string;
   timestamp: Date;
   metadata: any;
@@ -68,6 +71,7 @@ export default function Home() {
   const [newConfigModel, setNewConfigModel] = useState("");
   const [newConfigProvider, setNewConfigProvider] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [ngrokUrl, setNgrokUrl] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -92,6 +96,20 @@ export default function Home() {
       }
     };
     fetchData();
+  }, []);
+
+  useEffect(() => {
+    const fetchNgrokUrl = async () => {
+      try {
+        const response = await fetch("/api/ngrok-url");
+        const data = await response.json();
+        console.log(data);
+        setNgrokUrl(data.ngrokUrl);
+      } catch (error) {
+        console.error("Error fetching ngrok URL:", error);
+      }
+    };
+    fetchNgrokUrl();
   }, []);
 
   const handleConfigChange = async (configName: string) => {
@@ -240,6 +258,48 @@ export default function Home() {
           </Link>
         </CardContent>
       </Card>
+
+      {ngrokUrl ? (
+        <Card className="mb-8 w-full max-w-4xl">
+          <CardHeader>
+            <CardTitle>Ngrok Public URL</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center space-x-2">
+              <p className="mt-2">Add this as the base URL in Cursor:</p>
+              <code className="rounded bg-muted p-2 font-mono text-sm">
+                {`${ngrokUrl}/v1`}
+              </code>
+              <Button
+                onClick={() => {
+                  navigator.clipboard.writeText(`${ngrokUrl}/v1`);
+                  toast.success("Copied to clipboard");
+                }}
+                variant="ghost"
+                className=""
+              >
+                <Copy className="h-4 w-4" />
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card className="mb-8 w-full max-w-4xl">
+          <CardHeader>
+            <CardTitle>Ngrok Public URL</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p>
+              Ngrok URL not available. Please run ngrok to generate a public
+              URL.
+            </p>
+            <p className="mt-2">Run the following command in your terminal:</p>
+            <code className="mt-1 block rounded bg-muted p-2 font-mono text-sm">
+              ngrok http 3000
+            </code>
+          </CardContent>
+        </Card>
+      )}
 
       <Card className="w-full max-w-4xl">
         <CardHeader>

@@ -3,12 +3,10 @@ import { getModelConfigurations } from "../src/lib/model-config";
 
 const prisma = new PrismaClient();
 
-function convertToCostPerMillionTokens(cost: number): number {
-  return cost * 1_000_000;
-}
-
 async function main() {
   const modelConfigurations = getModelConfigurations();
+
+  await prisma.modelCost.deleteMany({});
 
   for (const [provider, models] of Object.entries(modelConfigurations)) {
     for (const [model, config] of Object.entries(models)) {
@@ -18,27 +16,19 @@ async function main() {
             provider_model_validFrom: {
               provider,
               model,
-              validFrom: new Date(),
+              validFrom: new Date("2024-08-01"),
             },
           },
           update: {
-            inputTokenCost: convertToCostPerMillionTokens(
-              config.inputTokenCost,
-            ),
-            outputTokenCost: convertToCostPerMillionTokens(
-              config.outputTokenCost,
-            ),
+            inputTokenCost: config.inputTokenCost,
+            outputTokenCost: config.outputTokenCost,
           },
           create: {
             provider,
             model,
-            inputTokenCost: convertToCostPerMillionTokens(
-              config.inputTokenCost,
-            ),
-            outputTokenCost: convertToCostPerMillionTokens(
-              config.outputTokenCost,
-            ),
-            validFrom: new Date(),
+            inputTokenCost: config.inputTokenCost,
+            outputTokenCost: config.outputTokenCost,
+            validFrom: new Date("2024-08-01"),
           },
         });
       }

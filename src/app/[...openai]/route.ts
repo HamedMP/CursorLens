@@ -191,10 +191,13 @@ export async function POST(
           const outputTokens = usage?.completionTokens ?? 0;
           const totalTokens = usage?.totalTokens ?? 0;
 
-          const modelCost = await getModelCost(provider, model);
-          const inputCost = (inputTokens / 1000000) * modelCost.inputTokenCost;
+          const modelCost = (await getModelCost(provider, model)) || {
+            inputTokenCost: 0,
+            outputTokenCost: 0,
+          };
+          const inputCost = (inputTokens * modelCost.inputTokenCost) / 1000000;
           const outputCost =
-            (outputTokens / 1000000) * modelCost.outputTokenCost;
+            (outputTokens * modelCost.outputTokenCost) / 1000000;
           const totalCost = inputCost + outputCost;
 
           logEntry.response = {
@@ -257,11 +260,14 @@ export async function POST(
       messages,
     });
 
-    const inputTokens = result.usage?.prompt_tokens ?? 0;
-    const outputTokens = result.usage?.completion_tokens ?? 0;
-    const totalTokens = result.usage?.total_tokens ?? 0;
+    const inputTokens = result.usage?.promptTokens ?? 0;
+    const outputTokens = result.usage?.completionTokens ?? 0;
+    const totalTokens = result.usage?.totalTokens ?? 0;
 
-    const modelCost = await getModelCost(provider, model);
+    const modelCost = (await getModelCost(provider, model)) || {
+      inputTokenCost: 0,
+      outputTokenCost: 0,
+    };
     const inputCost = inputTokens * modelCost.inputTokenCost;
     const outputCost = outputTokens * modelCost.outputTokenCost;
     const totalCost = inputCost + outputCost;
