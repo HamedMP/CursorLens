@@ -1,4 +1,5 @@
 services:
+  
   cursorlens-db:
     container_name: cursorlens-db
     image: postgres:14
@@ -37,6 +38,13 @@ services:
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
       - COHERE_API_KEY=${COHERE_API_KEY}
       - MISTRAL_API_KEY=${MISTRAL_API_KEY}
+  cursorlens-ngrok:
+    container_name: cursorlens-ngrok
+    image: ngrok/ngrok:latest
+    environment:
+      NGROK_AUTHTOKEN: ${NGROK_AUTHTOKEN}
+    command: http cursorlens:${APP_PORT:-3290}
+    ports:
+      - "3290:3290"
     depends_on:
-      cursorlens-db:
-        condition: service_healthy
+      - cursorlens
