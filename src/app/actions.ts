@@ -274,10 +274,16 @@ export async function updateConfiguration(
   return serializeDates(updatedConfig);
 }
 
-export async function deleteConfiguration(id: string): Promise<void> {
-  await prisma.aIConfiguration.delete({
-    where: { id },
-  });
+export async function deleteConfiguration(id: string) {
+  try {
+    const deletedConfig = await prisma.aIConfiguration.delete({
+      where: { id },
+    });
+    return serializeDates(deletedConfig);
+  } catch (error) {
+    console.error("Error deleting configuration:", error);
+    throw new Error("Failed to delete configuration");
+  }
 }
 
 type ConfigurationCost = {

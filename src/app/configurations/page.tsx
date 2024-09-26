@@ -21,7 +21,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
-import { PlusIcon } from "lucide-react";
+import { PlusIcon, PencilIcon, Trash2Icon } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -33,11 +33,14 @@ import {
   getConfigurations,
   updateDefaultConfiguration,
   createConfiguration,
+  deleteConfiguration,
+  updateConfiguration,
 } from "../actions";
 import {
   getModelConfigurations,
   type ModelConfigurations,
 } from "@/lib/model-config";
+import { ConfigurationModal } from "@/components/ConfigurationModal";
 
 interface AIConfiguration {
   id: string;
@@ -57,13 +60,12 @@ interface AIConfiguration {
 
 export default function ConfigurationsPage() {
   const [configurations, setConfigurations] = useState<AIConfiguration[]>([]);
-  const [newConfig, setNewConfig] = useState<Partial<AIConfiguration>>({});
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingConfig, setEditingConfig] = useState<AIConfiguration | null>(
+    null,
+  );
   const [error, setError] = useState<string | null>(null);
-  const [selectedProvider, setSelectedProvider] = useState<string>("");
-  const [selectedModel, setSelectedModel] = useState<string>("");
-  const [customProvider, setCustomProvider] = useState<string>("");
-  const [customModel, setCustomModel] = useState<string>("");
   const modelConfigurations: ModelConfigurations = useMemo(
     () => getModelConfigurations(),
     [],
@@ -92,36 +94,18 @@ export default function ConfigurationsPage() {
     }
   }, []);
 
-  const handleCreateConfig = useCallback(async () => {
-    if (!newConfig.name || !newConfig.provider || !newConfig.model) {
-      setError("Name, provider, and model are required fields");
-      return;
-    }
-
-    try {
-      await createConfiguration(newConfig);
-      setIsDialogOpen(false);
-      setNewConfig({});
-      fetchConfigurations();
-    } catch (error) {
-      console.error("Error creating configuration:", error);
-      // TODO: Implement better error handling and user feedback
-      // - Handle specific errors (e.g., unique constraint violations)
-      // - Display error messages in the UI (e.g., using a toast notification)
-      // - Highlight fields with errors
-      // - Prevent dialog from closing on error
-      if (
-        error instanceof Error &&
-        error.message.includes("Unique constraint failed")
-      ) {
-        setError(
-          "A configuration with this name already exists. Please choose a different name.",
-        );
-      } else {
+  const handleCreateConfig = useCallback(
+    async (newConfig: Partial<AIConfiguration>) => {
+      try {
+        await createConfiguration(newConfig);
+        fetchConfigurations();
+      } catch (error) {
+        console.error("Error creating configuration:", error);
         setError("Error creating configuration. Please try again.");
       }
-    }
-  }, [newConfig, fetchConfigurations]);
+    },
+    [fetchConfigurations],
+  );
 
   const handleToggleDefault = useCallback(
     async (configId: string, isDefault: boolean) => {
@@ -136,105 +120,40 @@ export default function ConfigurationsPage() {
     [fetchConfigurations],
   );
 
-  // TODO: Implement proper handling when turning off a default configuration
-  // - Prevent turning off the last default configuration
-  // - Show a toast message explaining why the action is not allowed
-  // - Implement logic to ensure at least one configuration is always set as default
-
-  const handleTemplateSelect = useCallback(
-    (provider: string, model: string): void => {
-      const providerConfigs = modelConfigurations[provider];
-
-      if (!providerConfigs) {
-        console.error(`No configurations found for provider: ${provider}`);
-        return;
+  const handleDeleteConfig = useCallback(
+    async (configId: string) => {
+      if (confirm("Are you sure you want to delete this configuration?")) {
+        try {
+          await deleteConfiguration(configId);
+          fetchConfigurations();
+        } catch (error) {
+          console.error("Error deleting configuration:", error);
+          setError("Failed to delete configuration. Please try again.");
+        }
       }
+    },
+    [fetchConfigurations],
+  );
 
-      const config = providerConfigs[model];
-
-      if (!config || !("isTemplate" in config) || !config.isTemplate) {
-        console.error(
-          `No valid template configuration found for model: ${model}`,
-        );
-        return;
+  const handleEditConfig = useCallback(
+    async (updatedConfig: Partial<AIConfiguration>) => {
+      if (!editingConfig) return;
+      try {
+        await updateConfiguration(editingConfig.id, updatedConfig);
+        fetchConfigurations();
+        setEditingConfig(null);
+      } catch (error) {
+        console.error("Error updating configuration:", error);
+        setError("Error updating configuration. Please try again.");
       }
-
-      const readableName = `${provider.charAt(0).toUpperCase() + provider.slice(1)} ${model}`;
-
-      setNewConfig({
-        ...config,
-        name: readableName,
-        provider,
-        model,
-      });
-      setSelectedProvider(provider);
-      setSelectedModel(model);
     },
-    [modelConfigurations],
+    [editingConfig, fetchConfigurations],
   );
 
-  const templateButtons = useMemo(
-    () =>
-      Object.entries(modelConfigurations).flatMap(([provider, models]) =>
-        Object.entries(models)
-          .filter(
-            ([_, config]) =>
-              config && "isTemplate" in config && config.isTemplate,
-          )
-          .map(([model, config]) => (
-            <Button
-              key={`${provider}-${model}`}
-              variant="outline"
-              className="w-full"
-              onClick={() => handleTemplateSelect(provider, model)}
-            >
-              {config && "name" in config
-                ? config.name
-                : `${provider} ${model}`}
-            </Button>
-          )),
-      ),
-    [modelConfigurations, handleTemplateSelect],
-  );
-
-  const handleProviderChange = useCallback(
-    (value: string) => {
-      setSelectedProvider(value);
-      setSelectedModel("");
-      setNewConfig({
-        ...newConfig,
-        provider: value === "other" ? "" : value,
-        model: "",
-      });
-      setCustomProvider("");
-    },
-    [newConfig],
-  );
-
-  const handleModelChange = useCallback(
-    (value: string) => {
-      setSelectedModel(value);
-      setNewConfig({ ...newConfig, model: value === "other" ? "" : value });
-      setCustomModel("");
-    },
-    [newConfig],
-  );
-
-  const handleCustomProviderChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      setCustomProvider(e.target.value);
-      setNewConfig({ ...newConfig, provider: e.target.value });
-    },
-    [newConfig],
-  );
-
-  const handleCustomModelChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      setCustomModel(e.target.value);
-      setNewConfig({ ...newConfig, model: e.target.value });
-    },
-    [newConfig],
-  );
+  const openEditModal = useCallback((config: AIConfiguration) => {
+    setEditingConfig(config);
+    setIsEditModalOpen(true);
+  }, []);
 
   return (
     <div className="container mx-auto p-8">
@@ -254,7 +173,7 @@ export default function ConfigurationsPage() {
                 <TableHead>Temperature</TableHead>
                 <TableHead>Max Tokens</TableHead>
                 <TableHead>Default</TableHead>
-                {/* TODO: Add an "Actions" column for edit functionality */}
+                <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -273,7 +192,25 @@ export default function ConfigurationsPage() {
                       }
                     />
                   </TableCell>
-                  {/* TODO: Add an edit button or icon in this cell */}
+                  <TableCell>
+                    <div className="flex space-x-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => openEditModal(config)}
+                      >
+                        <PencilIcon className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDeleteConfig(config.id)}
+                        disabled={config.isDefault}
+                      >
+                        <Trash2Icon className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -281,112 +218,28 @@ export default function ConfigurationsPage() {
         </CardContent>
       </Card>
 
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogTrigger asChild>
-          <Button onClick={() => setIsDialogOpen(true)}>
-            <PlusIcon className="mr-2 h-4 w-4" />
-            Add Configuration
-          </Button>
-        </DialogTrigger>
-        <DialogContent className="sm:max-w-[475px]">
-          <DialogHeader>
-            <DialogTitle>Add New Configuration</DialogTitle>
-          </DialogHeader>
-          <div className="grid max-h-[60vh] gap-4 overflow-y-auto py-4">
-            <div className="mt-4">
-              <Label>Templates</Label>
-              <div className="mt-2 grid grid-cols-2 gap-2">
-                {templateButtons}
-              </div>
-            </div>
-            <div className="mt-2 grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="name" className="text-right">
-                Name
-              </Label>
-              <Input
-                id="name"
-                value={newConfig.name || ""}
-                onChange={(e) =>
-                  setNewConfig({ ...newConfig, name: e.target.value })
-                }
-                className="col-span-3"
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="provider" className="text-right">
-                Provider
-              </Label>
-              <div className="col-span-3">
-                <Select
-                  value={selectedProvider}
-                  onValueChange={handleProviderChange}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select provider" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Object.keys(modelConfigurations).map((provider) => (
-                      <SelectItem key={provider} value={provider}>
-                        {provider}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {selectedProvider === "other" && (
-                  <Input
-                    id="customProvider"
-                    value={customProvider}
-                    onChange={handleCustomProviderChange}
-                    placeholder="Enter custom provider"
-                    className="mt-2"
-                  />
-                )}
-              </div>
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="model" className="text-right">
-                Model
-              </Label>
-              <div className="col-span-3">
-                <Select
-                  value={selectedModel}
-                  onValueChange={handleModelChange}
-                  disabled={!selectedProvider}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select model" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {selectedProvider &&
-                      Object.keys(
-                        modelConfigurations[selectedProvider] || {},
-                      ).map((model) => (
-                        <SelectItem key={model} value={model}>
-                          {model}
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
-                {selectedModel === "other" && (
-                  <Input
-                    id="customModel"
-                    value={customModel}
-                    onChange={handleCustomModelChange}
-                    placeholder="Enter custom model"
-                    className="mt-2"
-                  />
-                )}
-              </div>
-            </div>
-            {error && (
-              <div className="mb-4 mt-2 text-sm text-red-500">{error}</div>
-            )}
-            <div className="mt-4 flex justify-end">
-              <Button onClick={handleCreateConfig}>Create Configuration</Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <Button onClick={() => setIsAddModalOpen(true)}>
+        <PlusIcon className="mr-2 h-4 w-4" />
+        Add Configuration
+      </Button>
+
+      <ConfigurationModal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        onSave={handleCreateConfig}
+        title="Add New Configuration"
+      />
+
+      <ConfigurationModal
+        isOpen={isEditModalOpen}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setEditingConfig(null);
+        }}
+        onSave={handleEditConfig}
+        initialConfig={editingConfig || undefined}
+        title="Edit Configuration"
+      />
     </div>
   );
 }
