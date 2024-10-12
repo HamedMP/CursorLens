@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -9,30 +9,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import LogsList from "../components/LogsList";
+import { Skeleton } from "@/components/ui/skeleton";
+import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Label } from "@/components/ui/label";
-import { ArrowRight } from "lucide-react";
+import { useEffect, useState } from "react";
+import LogsList from "../components/LogsList";
+import { Log } from "../types/logs";
 import {
+  createConfiguration,
+  getConfigurations,
   getLogs,
   getStats,
-  getConfigurations,
   updateDefaultConfiguration,
-  createConfiguration,
 } from "./actions";
-import { Skeleton } from "@/components/ui/skeleton";
-
-interface Log {
-  id: string;
-  method: string;
-  url: string;
-  headers: string;
-  body: string;
-  response: string;
-  timestamp: Date;
-  metadata: any;
-}
 
 interface Stats {
   totalLogs: number;
@@ -78,7 +68,7 @@ export default function Home() {
           getConfigurations(),
         ]);
 
-        setLogs(logsData as Log[]); // Type assertion
+        setLogs(logsData as unknown as Log[]); // Type assertion
         setStats(statsData);
         setAIConfigurations(configData as AIConfiguration[]); // Type assertion
         const defaultConfig = configData.find((config) => config.isDefault);

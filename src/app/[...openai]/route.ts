@@ -1,15 +1,15 @@
-import { openai, createOpenAI } from "@ai-sdk/openai";
 import { anthropic, createAnthropic } from "@ai-sdk/anthropic";
 import { createCohere } from "@ai-sdk/cohere";
 import { createMistral } from "@ai-sdk/mistral";
+import { createOpenAI, openai } from "@ai-sdk/openai";
 import { ollama } from "ollama-ai-provider";
 
-import { generateText, streamText } from "ai";
-import { insertLog, getDefaultConfiguration } from "@/lib/db";
-import { type NextRequest, NextResponse } from "next/server";
-import OpenAI from "openai";
 import { env } from "@/env";
 import { calculateCost, getModelCost } from "@/lib/cost-calculator";
+import { getDefaultConfiguration, insertLog } from "@/lib/db";
+import { generateText, streamText } from "ai";
+import { type NextRequest, NextResponse } from "next/server";
+import OpenAI from "openai";
 
 const openaiClient = new OpenAI({
   apiKey: env.OPENAI_API_KEY,
@@ -139,7 +139,7 @@ export async function POST(
     const logEntry = {
       method: "POST",
       url: `/api/${endpoint}`,
-      headers: JSON.stringify(Object.fromEntries(request.headers)),
+      headers: Object.fromEntries(request.headers),
       body: {
         ...body,
         ...streamTextOptions,
@@ -246,16 +246,16 @@ export async function POST(
       messages,
     });
 
-    const inputTokens = result.usage?.prompt_tokens ?? 0;
-    const outputTokens = result.usage?.completion_tokens ?? 0;
-    const totalTokens = result.usage?.total_tokens ?? 0;
+    const inputTokens = result.usage?.promptTokens ?? 0;
+    const outputTokens = result.usage?.completionTokens ?? 0;
+    const totalTokens = result.usage?.totalTokens ?? 0;
 
     const modelCost = await getModelCost(provider, model);
     const inputCost = inputTokens * modelCost.inputTokenCost;
     const outputCost = outputTokens * modelCost.outputTokenCost;
     const totalCost = inputCost + outputCost;
 
-    logEntry.response = JSON.stringify(result);
+    logEntry.response = result;
     logEntry.metadata = {
       ...logEntry.metadata,
       inputTokens,
@@ -274,14 +274,14 @@ export async function POST(
     const errorLogEntry = {
       method: "POST",
       url: `/api/${endpoint}`,
-      headers: JSON.stringify(Object.fromEntries(request.headers)),
-      body: JSON.stringify(body),
-      response: JSON.stringify({ error: errorMessage }),
+      headers: Object.fromEntries(request.headers),
+      body: body,
+      response: { error: errorMessage },
       timestamp: new Date(),
-      metadata: JSON.stringify({
+      metadata: {
         error: errorMessage,
         stack: (error as Error).stack,
-      }),
+      },
     };
     await insertLog(errorLogEntry);
     return NextResponse.json({ error: errorMessage }, { status: 500 });
@@ -299,20 +299,20 @@ export async function GET(
     const logEntry = {
       method: "GET",
       url: "/api/v1/models",
-      headers: JSON.stringify(Object.fromEntries(request.headers)),
-      body: "",
-      response: "",
+      headers: Object.fromEntries(request.headers),
+      body: {},
+      response: {},
       timestamp: new Date(),
     };
 
     try {
       const models = await openaiClient.models.list();
-      logEntry.response = JSON.stringify(models);
+      logEntry.response = models;
       await insertLog(logEntry);
       return NextResponse.json(models);
     } catch (error) {
       console.error("Error fetching models:", error);
-      logEntry.response = JSON.stringify({ error: String(error) });
+      logEntry.response = { error: String(error) };
       await insertLog(logEntry);
       return NextResponse.json({ error: String(error) }, { status: 500 });
     }
