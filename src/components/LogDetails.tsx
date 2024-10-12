@@ -1,19 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import {
-  Prism as SyntaxHighlighter,
-  SyntaxHighlighterProps,
-} from "react-syntax-highlighter";
-import * as themes from "react-syntax-highlighter/dist/esm/styles/prism";
 import { Button } from "@/components/ui/button";
-import { Copy, ChevronDown, ChevronUp } from "lucide-react";
-import ReactMarkdown from "react-markdown";
-import { toast } from "sonner";
-import { useSearchParams } from "next/navigation";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
   TableBody,
@@ -22,28 +12,32 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-
-interface Log {
-  id: number;
-  method: string;
-  url: string;
-  timestamp: string;
-  headers: string;
-  body: string;
-  response: string | null;
-  metadata: {
-    inputTokens: number;
-    outputTokens: number;
-    totalTokens: number;
-    inputCost: number;
-    outputCost: number;
-    totalCost: number;
-  };
-}
+import { ChevronDown, ChevronUp, Copy } from "lucide-react";
+import { useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
+import ReactMarkdown from "react-markdown";
+import {
+  Prism as SyntaxHighlighter,
+  SyntaxHighlighterProps,
+} from "react-syntax-highlighter";
+import * as themes from "react-syntax-highlighter/dist/esm/styles/prism";
+import { toast } from "sonner";
+import { Log } from "../types/logs";
 
 interface LogDetailsProps {
   logId: string;
 }
+
+const formatMetadataValue = (
+  value: number | undefined,
+  isMonetary: boolean = false,
+): string => {
+  if (value === undefined || isNaN(value)) return "N/A";
+  if (isMonetary) {
+    return `$${value.toFixed(4)}`;
+  }
+  return value.toLocaleString();
+};
 
 export default function LogDetails({ logId }: LogDetailsProps) {
   const [log, setLog] = useState<Log | null>(null);
@@ -120,15 +114,6 @@ export default function LogDetails({ logId }: LogDetailsProps) {
     );
   }
 
-  const parseJSON = (str: string | null) => {
-    if (!str) return null;
-    try {
-      return JSON.parse(str);
-    } catch {
-      return str;
-    }
-  };
-
   const maskSensitiveInfo = (obj: any) => {
     const sensitiveKeys = ["authorization", "api-key", "secret"];
     if (typeof obj === "object" && obj !== null) {
@@ -151,11 +136,12 @@ export default function LogDetails({ logId }: LogDetailsProps) {
     content,
     isExpandable = false,
   }: {
-    content: string | null;
+    content: object | string | null;
     isExpandable?: boolean;
   }) => {
     const [isExpanded, setIsExpanded] = useState(!isExpandable);
-    const parsedContent = content;
+    const parsedContent =
+      typeof content === "string" ? JSON.parse(content) : content;
     const maskedContent = maskSensitiveInfo(parsedContent);
     const jsonString =
       JSON.stringify(maskedContent, null, 2) || "No data available";
@@ -294,19 +280,19 @@ export default function LogDetails({ logId }: LogDetailsProps) {
           </SyntaxHighlighter>
         )}
 
-        {parsedContent && parsedContent.text && (
+        {parsedContent && "text" in parsedContent && (
           <div className="mb-4">
             <h4 className="mb-2 text-lg font-semibold">AI Response</h4>
             {renderAIResponse(parsedContent)}
           </div>
         )}
 
-        {parsedContent && parsedContent.messages && (
+        {parsedContent && "messages" in parsedContent && (
           <div className="mb-4">
             <h4 className="mb-2 text-lg font-semibold">
               Messages (Most recent on top)
             </h4>
-            {renderMessages(parsedContent.messages)}
+            {renderMessages(parsedContent.messages as object[])}
           </div>
         )}
       </div>
@@ -328,12 +314,24 @@ export default function LogDetails({ logId }: LogDetailsProps) {
         </TableHeader>
         <TableBody>
           <TableRow>
-            <TableCell>{log.metadata.inputTokens}</TableCell>
-            <TableCell>{log.metadata.outputTokens}</TableCell>
-            <TableCell>{log.metadata.totalTokens}</TableCell>
-            <TableCell>${log.metadata.inputCost.toFixed(4)}</TableCell>
-            <TableCell>${log.metadata.outputCost.toFixed(4)}</TableCell>
-            <TableCell>${log.metadata.totalCost.toFixed(4)}</TableCell>
+            <TableCell>
+              {formatMetadataValue(log.metadata?.inputTokens)}
+            </TableCell>
+            <TableCell>
+              {formatMetadataValue(log.metadata?.outputTokens)}
+            </TableCell>
+            <TableCell>
+              {formatMetadataValue(log.metadata?.totalTokens)}
+            </TableCell>
+            <TableCell>
+              {formatMetadataValue(log.metadata?.inputCost, true)}
+            </TableCell>
+            <TableCell>
+              {formatMetadataValue(log.metadata?.outputCost, true)}
+            </TableCell>
+            <TableCell>
+              {formatMetadataValue(log.metadata?.totalCost, true)}
+            </TableCell>
           </TableRow>
         </TableBody>
       </Table>
@@ -369,10 +367,7 @@ export default function LogDetails({ logId }: LogDetailsProps) {
           </CardHeader>
           {expandedSections.response && (
             <CardContent>
-              <JsonHighlight
-                content={parseJSON(log.response)}
-                isExpandable={true}
-              />
+              <JsonHighlight content={log.response} isExpandable={true} />
             </CardContent>
           )}
         </Card>
@@ -393,10 +388,7 @@ export default function LogDetails({ logId }: LogDetailsProps) {
           </CardHeader>
           {expandedSections.body && (
             <CardContent>
-              <JsonHighlight
-                content={parseJSON(log.body)}
-                isExpandable={true}
-              />
+              <JsonHighlight content={log.body} isExpandable={true} />
             </CardContent>
           )}
         </Card>
@@ -417,7 +409,7 @@ export default function LogDetails({ logId }: LogDetailsProps) {
           </CardHeader>
           {expandedSections.headers && (
             <CardContent>
-              <JsonHighlight content={parseJSON(log.headers)} />
+              <JsonHighlight content={log.headers} />
             </CardContent>
           )}
         </Card>

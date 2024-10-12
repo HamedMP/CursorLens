@@ -1,81 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Badge } from "@/components/ui/badge";
-import { DollarSign, Clock, Hash, MessageSquare } from "lucide-react";
 import { getConfigurationCosts } from "@/app/actions";
-
-interface LogMetadata {
-  topP: number;
-  model: string;
-  configId: string;
-  provider: string;
-  maxTokens: number;
-  temperature: number;
-  presencePenalty: number;
-  frequencyPenalty: number;
-  totalTokens: number;
-  totalCost: number;
-}
-
-interface Usage {
-  promptTokens: number;
-  completionTokens: number;
-  totalTokens: number;
-}
-
-interface Message {
-  role: string;
-  content: string;
-  name?: string;
-  experimental_providerMetadata?: {
-    anthropic?: {
-      cacheControl?: {
-        type: string;
-      };
-    };
-  };
-}
-
-interface RequestBody {
-  messages: Message[];
-  temperature: number;
-  user: string;
-  stream: boolean;
-}
-
-interface ResponseData {
-  text: string;
-  toolCalls: any[];
-  toolResults: any[];
-  usage: Usage;
-  finishReason: string;
-  rawResponse: {
-    headers: Record<string, string>;
-  };
-  warnings: string[];
-  experimental_providerMetadata?: {
-    anthropic?: {
-      cacheCreationInputTokens?: number;
-      cacheReadInputTokens?: number;
-    };
-  };
-}
-
-interface Log {
-  id: string;
-  method: string;
-  url: string;
-  headers: string;
-  body: RequestBody; // This will be a JSON string containing RequestBody
-  response: ResponseData; // This will be a JSON string containing ResponseData
-  timestamp: string;
-  metadata: LogMetadata;
-}
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Clock, DollarSign, Hash, MessageSquare } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { Log } from "../types/logs";
 
 interface LogsListProps {
   logs: Log[];
