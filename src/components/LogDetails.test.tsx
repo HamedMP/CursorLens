@@ -8,19 +8,21 @@ describe("LogDetails", () => {
   const mockLogId = "123";
   const mockLog = {
     id: 123,
-    method: "GET",
+    method: "POST",
     url: "/api/test",
+    headers: { "Content-Type": "application/json" },
+    body: { message: "Test body" },
+    response: { result: "Success" },
     timestamp: "2023-04-01T12:00:00Z",
-    headers: '{"Content-Type": "application/json"}',
-    body: '{"key": "value"}',
-    response: '{"result": "success"}',
     metadata: {
+      provider: "openai",
+      model: "gpt-3.5-turbo",
       inputTokens: 10,
       outputTokens: 20,
       totalTokens: 30,
-      inputCost: 0.001,
-      outputCost: 0.002,
-      totalCost: 0.003,
+      inputCost: 0.0001,
+      outputCost: 0.0002,
+      totalCost: 0.0003,
     },
   };
   let fetchResolve: (value: unknown) => void;
@@ -72,13 +74,20 @@ describe("LogDetails", () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByText("GET /api/test")).toBeInTheDocument();
+      expect(screen.getByText("POST /api/test")).toBeInTheDocument();
       expect(screen.getByText("2023-04-01T12:00:00Z")).toBeInTheDocument();
       expect(screen.getByText("Input Tokens")).toBeInTheDocument();
       expect(screen.getByText("10")).toBeInTheDocument();
-      expect(screen.getByText("Response")).toBeInTheDocument();
-      expect(screen.getByText("Body")).toBeInTheDocument();
-      expect(screen.getByText("Headers")).toBeInTheDocument();
+      expect(screen.getByText("Output Tokens")).toBeInTheDocument();
+      expect(screen.getByText("20")).toBeInTheDocument();
+      expect(screen.getByText("Total Tokens")).toBeInTheDocument();
+      expect(screen.getByText("30")).toBeInTheDocument();
+      expect(screen.getByText("Input Cost")).toBeInTheDocument();
+      expect(screen.getByText("$0.0001")).toBeInTheDocument();
+      expect(screen.getByText("Output Cost")).toBeInTheDocument();
+      expect(screen.getByText("$0.0002")).toBeInTheDocument();
+      expect(screen.getByText("Total Cost")).toBeInTheDocument();
+      expect(screen.getByText("$0.0003")).toBeInTheDocument();
     });
   });
 });
