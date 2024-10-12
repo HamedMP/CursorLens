@@ -4,11 +4,25 @@ import React from "react";
 import { beforeEach, describe, expect, it, Mock, vi } from "vitest";
 import LogDetails from "./LogDetails";
 
-// Mock the fetch function
-vi.mock("node-fetch");
-
 describe("LogDetails", () => {
   const mockLogId = "123";
+  const mockLog = {
+    id: 123,
+    method: "GET",
+    url: "/api/test",
+    timestamp: "2023-04-01T12:00:00Z",
+    headers: '{"Content-Type": "application/json"}',
+    body: '{"key": "value"}',
+    response: '{"result": "success"}',
+    metadata: {
+      inputTokens: 10,
+      outputTokens: 20,
+      totalTokens: 30,
+      inputCost: 0.001,
+      outputCost: 0.002,
+      totalCost: 0.003,
+    },
+  };
   let fetchResolve: (value: unknown) => void;
 
   beforeEach(() => {
@@ -22,36 +36,14 @@ describe("LogDetails", () => {
   });
 
   it("renders loading skeleton when log is not loaded", async () => {
-    await act(async () => {
-      render(<LogDetails logId={mockLogId} />);
-    });
+    render(<LogDetails logId={mockLogId} />);
 
     expect(screen.getAllByRole("status").length).toBeGreaterThan(0);
     expect(screen.getAllByLabelText(/loading/i).length).toBeGreaterThan(0);
 
-    // Resolve the fetch promise with a minimal valid log object
-    await act(async () => {
-      fetchResolve({
-        ok: true,
-        json: () =>
-          Promise.resolve({
-            id: 123,
-            method: "GET",
-            url: "/test",
-            timestamp: "2023-04-01T12:00:00Z",
-            headers: "{}",
-            body: "{}",
-            response: "{}",
-            metadata: {
-              inputTokens: 0,
-              outputTokens: 0,
-              totalTokens: 0,
-              inputCost: 0,
-              outputCost: 0,
-              totalCost: 0,
-            },
-          }),
-      });
+    fetchResolve({
+      ok: true,
+      json: () => Promise.resolve(mockLog),
     });
 
     await waitFor(() => {
@@ -72,30 +64,12 @@ describe("LogDetails", () => {
   });
 
   it("renders log details when fetch is successful", async () => {
-    const mockLog = {
-      id: 123,
-      method: "GET",
-      url: "/api/test",
-      timestamp: "2023-04-01T12:00:00Z",
-      headers: '{"Content-Type": "application/json"}',
-      body: '{"key": "value"}',
-      response: '{"result": "success"}',
-      metadata: {
-        inputTokens: 10,
-        outputTokens: 20,
-        totalTokens: 30,
-        inputCost: 0.001,
-        outputCost: 0.002,
-        totalCost: 0.003,
-      },
-    };
+    render(<LogDetails logId={mockLogId} />);
 
-    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+    fetchResolve({
       ok: true,
       json: () => Promise.resolve(mockLog),
     });
-
-    render(<LogDetails logId={mockLogId} />);
 
     await waitFor(() => {
       expect(screen.getByText("GET /api/test")).toBeInTheDocument();
