@@ -15,9 +15,9 @@ model Log {
   id        String   @id @default(cuid())
   method    String
   url       String
-  headers   String
+  headers   Json
   body      Json
-  response  Json
+  response  Json?
   timestamp DateTime @default(now())
   metadata  Json
 
