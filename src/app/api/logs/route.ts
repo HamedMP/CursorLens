@@ -1,7 +1,7 @@
 // app/api/logs/route.ts
-import { NextRequest, NextResponse } from "next/server";
 import { getLogs } from "@/app/actions";
 import prisma from "@/lib/prisma"; // Make sure to import prisma client
+import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;
@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
       data: {
         ...logData,
         metadata: logData.metadata as any,
-        response: logData.response as any, // Ensure response is stored as Json
+        response: logData.response as any,
         timestamp: new Date(),
       },
     });
