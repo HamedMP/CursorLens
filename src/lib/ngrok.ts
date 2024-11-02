@@ -1,4 +1,4 @@
-const NGROK_API = "http://localhost:4040/api/tunnels";
+const NGROK_API = `${process.env.NGROK_API_URL || "http://localhost:4040"}/api`;
 
 export async function startNgrokTunnel() {
   try {
@@ -24,18 +24,12 @@ export async function startNgrokTunnel() {
 }
 
 export async function getActiveTunnels() {
-  try {
-    const response = await fetch(NGROK_API);
-    if (!response.ok) {
-      throw new Error(`Failed to connect to ngrok API: ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    return data.tunnels?.map((tunnel: any) => tunnel.public_url) || [];
-  } catch (error) {
-    console.error("Error getting tunnels:", error);
-    throw error;
+  const response = await fetch(`${NGROK_API}/tunnels`);
+  if (!response.ok) {
+    throw new Error("Failed to fetch tunnels");
   }
+  const data = await response.json();
+  return data.tunnels.map((tunnel: any) => tunnel.public_url);
 }
 
 // Note: When using Docker, stopping tunnels isn't necessary
