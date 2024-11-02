@@ -1,41 +1,50 @@
 services:
-  db:
+  
+  cursorlens-db:
+    container_name: cursorlens-db
     image: postgres:14
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_DB=postgres
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - ./postgres_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
       timeout: 5s
       retries: 5
-    ports:
-      - "5432:5432"
-
-  app:
+    expose:
+      - 5432
+  cursorlens:
+    container_name: cursorlens
+    image: cursorlens
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        - APP_PORT=${APP_PORT:-3290}
+        - DATABASE_URL=postgresql://postgres:postgres@cursorlens-db:5432/postgres
+        - OPENAI_API_KEY=${OPENAI_API_KEY}
+        - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+        - COHERE_API_KEY=${COHERE_API_KEY}
+        - MISTRAL_API_KEY=${MISTRAL_API_KEY}
     ports:
-      - "3000:3000"
+      - "${APP_PORT:-3290}:${APP_PORT:-3290}"
     environment:
-      - DATABASE_URL=postgresql://postgres:postgres@db:5432/postgres
-    depends_on:
-      db:
-        condition: service_healthy
-
-  ngrok:
+      - APP_PORT=${APP_PORT:-3290}
+      - DATABASE_URL=postgresql://postgres:postgres@cursorlens-db:5432/postgres
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - COHERE_API_KEY=${COHERE_API_KEY}
+      - MISTRAL_API_KEY=${MISTRAL_API_KEY}
+  cursorlens-ngrok:
+    container_name: cursorlens-ngrok
     image: ngrok/ngrok:latest
     environment:
       NGROK_AUTHTOKEN: ${NGROK_AUTHTOKEN}
-    command: http app:3000
+    command: http cursorlens:${APP_PORT:-3290}
     ports:
-      - "4040:4040"
+      - "3290:3290"
     depends_on:
-      - app
-
-volumes:
-  postgres_data:
+      - cursorlens
