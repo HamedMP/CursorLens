@@ -1,57 +1,45 @@
-import { exec } from "child_process";
-import { promisify } from "util";
-
-const execAsync = promisify(exec);
+const NGROK_API = "http://localhost:4040/api/tunnels";
 
 export async function startNgrokTunnel() {
   try {
-    // Check if ngrok is running
-    const { stdout: psOutput } = await execAsync("ps aux | grep ngrok");
-    const isNgrokRunning = psOutput.toLowerCase().includes("ngrok http");
-
-    if (!isNgrokRunning) {
-      // Start ngrok in the background
-      await execAsync("ngrok http 3000 > /dev/null 2>&1 &");
-      // Wait a bit for ngrok to start
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+    // In Docker, ngrok is already running via docker-compose
+    // Just fetch existing tunnels
+    const response = await fetch(NGROK_API);
+    if (!response.ok) {
+      throw new Error(`Failed to connect to ngrok API: ${response.statusText}`);
     }
 
-    // Get the public URL from ngrok API
-    const { stdout } = await execAsync(
-      "curl -s http://localhost:4040/api/tunnels",
-    );
-    const tunnels = JSON.parse(stdout);
-    const url = tunnels.tunnels?.[0]?.public_url;
+    const data = await response.json();
+    const url = data.tunnels?.[0]?.public_url;
 
     if (!url) {
-      throw new Error("No active tunnels found");
+      throw new Error("No active tunnels found. Make sure ngrok is running.");
     }
 
     return url;
   } catch (error) {
-    console.error("Error starting ngrok tunnel:", error);
+    console.error("Error getting ngrok tunnel:", error);
     throw error;
   }
 }
 
 export async function getActiveTunnels() {
   try {
-    const { stdout } = await execAsync(
-      "curl -s http://localhost:4040/api/tunnels",
-    );
-    const tunnels = JSON.parse(stdout);
-    return tunnels.tunnels?.map((tunnel: any) => tunnel.public_url) || [];
+    const response = await fetch(NGROK_API);
+    if (!response.ok) {
+      throw new Error(`Failed to connect to ngrok API: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data.tunnels?.map((tunnel: any) => tunnel.public_url) || [];
   } catch (error) {
     console.error("Error getting tunnels:", error);
     throw error;
   }
 }
 
+// Note: When using Docker, stopping tunnels isn't necessary
+// as they're managed by docker-compose
 export async function stopNgrokTunnels() {
-  try {
-    await execAsync("pkill ngrok");
-  } catch (error) {
-    console.error("Error stopping tunnels:", error);
-    throw error;
-  }
+  return;
 }

@@ -38,15 +38,51 @@ For detailed installation instructions, please refer to our [Installation Guide]
 
 ### Option 1: Running with Docker
 
-1. Clone the repository
-2. Install dependencies with `pnpm install`
-3. Set up environment variables
-4. Set up the database with `pnpm prisma migrate dev`
-5. Build the project with `pnpm build`
-6. Set up ngrok
-7. Configure Cursor to use your ngrok URL as the API endpoint
+1. Clone the repository:
 
-For full details on each step, please see the [Installation Guide](https://www.cursorlens.com/docs/getting-started/installation).
+```bash
+git clone https://github.com/yourusername/cursor-lens.git
+cd cursor-lens
+```
+
+2. Create a `.env` file:
+
+```bash
+cp .env.example .env
+```
+
+3. Configure your `.env` file with required values:
+
+```plaintext
+# Required
+DATABASE_URL=postgresql://postgres:postgres@db:5432/postgres
+NGROK_AUTHTOKEN=your_ngrok_auth_token_here
+
+# At least one AI provider key is required
+OPENAI_API_KEY=your_openai_api_key_here
+ANTHROPIC_API_KEY=your_anthropic_api_key_here
+# ... other optional provider keys
+```
+
+4. Start the services:
+
+```bash
+docker compose up -d
+```
+
+This will start:
+
+- PostgreSQL database
+- CursorLens application
+- Ngrok tunnel (automatically configured)
+
+5. Access the dashboard:
+
+- Open `http://localhost:3000` for the dashboard
+- View tunnel status at `http://localhost:4040`
+- Use the tunnel URL displayed in the dashboard for Cursor configuration
+
+Note: The ngrok tunnel URL will be automatically displayed in the dashboard's connection section. Use this URL in Cursor's OpenAI Base URL setting.
 
 ### Option 2: Running Locally
 
@@ -77,12 +113,6 @@ pnpm prisma db seed
 pnpm dev
 ```
 
-5. In a separate terminal, start localtunnel
-
-```bash
-npx localtunnel --port 3000
-```
-
 ### Configuration
 
 1. Configure your `.env` file:
@@ -98,12 +128,14 @@ COHERE_API_KEY=your_cohere_api_key_here
 MISTRAL_API_KEY=your_mistral_api_key_here
 GROQ_API_KEY=your_groq_api_key_here
 
-2. The tunnel URL will be displayed in the dashboard. Use this URL in Cursor's settings:
-   - Open Cursor Settings
-   - Search for "OpenAI Base URL"
-   - Paste your tunnel URL
-   - Save settings
+# Tunnel Configuration
+NGROK_AUTHTOKEN=your_ngrok_auth_token_here  # Required for ngrok tunneling
+```
 
+2. Set up tunneling:
+   - The dashboard now includes built-in ngrok tunnel management
+   - Your tunnel URL will be displayed in the dashboard
+   - Use this URL in Cursor's OpenAI Base URL setting
 
 ## Usage
 
@@ -131,11 +163,45 @@ GROQ_API_KEY=your_groq_api_key_here
 
 # Releases
 
-## [0.1.3] - 2024-11-02
+## [0.2.0] - 2024-11-03
+
+### Added
+
+- Integrated ngrok tunnel management directly in the dashboard
+- Improved cost calculation system with better error handling
+- Combined seed and cost update scripts for easier maintenance
+- Detailed logging for cost updates and seeding operations
+
+### Changed
+
+- Simplified database seeding process
+- Better error handling for edge cases in cost calculations
+- More detailed console output during seeding operations
+- Improved tunnel management UI
+
+### Coming Soon
+
+- Cloudflare tunnel support as an alternative to ngrok
+
+### How to Update
+
+1. Update your environment variables:
+   ```bash
+   # Add to your .env file:
+   NGROK_AUTHTOKEN=your_ngrok_auth_token_here
+   ```
+2. Run the database updates:
+   ```bash
+   pnpm prisma migrate dev
+   pnpm prisma db seed
+   ```
+
+## [0.2.0] - 2024-11-02
 
 ### Added
 
 - Improved cost calculation system with better error handling
+- Integrated ngrok tunnel management directly in the dashboard
 - Combined seed and cost update scripts for easier maintenance
 - Detailed logging for cost updates and seeding operations
 
@@ -144,23 +210,25 @@ GROQ_API_KEY=your_groq_api_key_here
 - Simplified database seeding process - now one command handles both model costs and log updates
 - Better error handling for edge cases in cost calculations
 - More detailed console output during seeding operations
+- Improved secure handling of API keys that are mentioned in the headers. The `seed` script also removes it from previous logs.
 
 ### How to Update
 
-Run the following command to update your installation:
+1. Update your environment variables:
 
-## Nightly - 2024-08-24
+```bash
+# Add to your .env file:
+NGROK_AUTHTOKEN=your_ngrok_auth_token_here
+```
 
-- Add new cost calculation
+2. Run the database updates:
 
-To run it, make sure to run:
-
-- `npx prisma seed db` and then
-- `pnpm run update-log-costs` to add cost info in metadata for all previous logs
+```bash
+pnpm prisma migrate dev
+pnpm prisma db seed
+```
 
 ## [0.1.2-alpha] - 2024-08-22
-
-### ⚠️ ALPHA RELEASE
 
 ### Added
 
@@ -221,4 +289,7 @@ For more detailed information, please visit our [documentation](https://www.curs
 ---
 
 Happy coding with Cursor Lens!
+
+```
+
 ```
