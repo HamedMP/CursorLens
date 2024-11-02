@@ -86,9 +86,10 @@ export default function Home() {
           getConfigurations(),
         ]);
 
-        setLogs(logsData as unknown as Log[]); // Type assertion
+        setLogs(logsData as unknown as Log[]);
         setStats(statsData);
-        setAIConfigurations(configData as AIConfiguration[]); // Type assertion
+        setAIConfigurations(configData as AIConfiguration[]);
+
         const defaultConfig = configData.find((config) => config.isDefault);
         setSelectedConfig(defaultConfig ? defaultConfig.name : "");
 
@@ -105,7 +106,11 @@ export default function Home() {
   const handleConfigChange = async (configName: string) => {
     setSelectedConfig(configName);
     try {
-      await updateDefaultConfiguration(configName);
+      const config = aiConfigurations.find((conf) => conf.name === configName);
+      if (!config) {
+        throw new Error(`Configuration "${configName}" not found`);
+      }
+      await updateDefaultConfiguration(config.id);
       router.refresh();
     } catch (error) {
       console.error("Error updating configuration:", error);
@@ -130,7 +135,7 @@ export default function Home() {
       });
 
       const configData = await getConfigurations();
-      setAIConfigurations(configData as AIConfiguration[]); // Type assertion
+      setAIConfigurations(configData as AIConfiguration[]);
 
       setNewConfigName("");
       setNewConfigModel("");
@@ -326,7 +331,7 @@ export default function Home() {
               </SelectTrigger>
               <SelectContent>
                 {aiConfigurations.map((config) => (
-                  <SelectItem key={config.name} value={config.name}>
+                  <SelectItem key={config.id} value={config.name}>
                     {config.name} ({config.model})
                   </SelectItem>
                 ))}

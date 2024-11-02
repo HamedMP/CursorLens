@@ -212,10 +212,20 @@ export async function getConfigurations(): Promise<AIConfiguration[]> {
 export async function updateDefaultConfiguration(
   configId: string,
 ): Promise<void> {
+  // Check if the configuration exists
+  const configExists = await prisma.aIConfiguration.findUnique({
+    where: { id: configId },
+  });
+
+  if (!configExists) {
+    throw new Error(`Configuration with id ${configId} not found`);
+  }
+
   await prisma.aIConfiguration.updateMany({
     where: { isDefault: true },
     data: { isDefault: false },
   });
+
   await prisma.aIConfiguration.update({
     where: { id: configId },
     data: { isDefault: true },

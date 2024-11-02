@@ -21,8 +21,8 @@ import { getModelConfigurations } from "@/lib/model-config";
 interface ConfigurationModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (config: Partial<AIConfiguration>) => Promise<void>;
-  initialConfig?: Partial<AIConfiguration>;
+  onSave: (config: Partial<AIConfiguration>) => void;
+  initialConfig?: AIConfiguration;
   title: string;
 }
 
@@ -33,9 +33,17 @@ export function ConfigurationModal({
   initialConfig,
   title,
 }: ConfigurationModalProps) {
-  const [config, setConfig] = useState<Partial<AIConfiguration>>(
-    initialConfig || {},
-  );
+  const [formData, setFormData] = useState<Partial<AIConfiguration>>({
+    name: "",
+    provider: "",
+    model: "",
+    temperature: 0.7,
+    maxTokens: 1000,
+    topP: 1,
+    frequencyPenalty: 0,
+    presencePenalty: 0,
+    apiKey: "",
+  });
   const [error, setError] = useState<string | null>(null);
   const [selectedProvider, setSelectedProvider] = useState<string>(
     initialConfig?.provider || "",
@@ -55,11 +63,29 @@ export function ConfigurationModal({
   });
 
   useEffect(() => {
+    if (initialConfig) {
+      setFormData({
+        name: initialConfig.name,
+        provider: initialConfig.provider,
+        model: initialConfig.model,
+        temperature: initialConfig.temperature ?? 0.7,
+        maxTokens: initialConfig.maxTokens ?? 1000,
+        topP: initialConfig.topP ?? 1,
+        frequencyPenalty: initialConfig.frequencyPenalty ?? 0,
+        presencePenalty: initialConfig.presencePenalty ?? 0,
+        apiKey: initialConfig.apiKey ?? "",
+      });
+      setSelectedProvider(initialConfig.provider);
+      setSelectedModel(initialConfig.model);
+    }
+  }, [initialConfig]);
+
+  useEffect(() => {
     const fetchCostData = async () => {
-      if (config.provider && config.model) {
+      if (formData.provider && formData.model) {
         try {
           const response = await fetch(
-            `/api/costs/current?provider=${config.provider}&model=${config.model}`,
+            `/api/costs/current?provider=${formData.provider}&model=${formData.model}`,
           );
           if (response.ok) {
             const data = await response.json();
@@ -77,15 +103,15 @@ export function ConfigurationModal({
     };
 
     fetchCostData();
-  }, [config.provider, config.model]);
+  }, [formData.provider, formData.model]);
 
   const handleSave = useCallback(async () => {
-    if (!config.name || !config.provider || !config.model) {
+    if (!formData.name || !formData.provider || !formData.model) {
       setError("Name, provider, and model are required fields");
       return;
     }
 
-    const configToSave = { ...config };
+    const configToSave = { ...formData };
 
     if (costData.inputTokenCost && costData.outputTokenCost) {
       configToSave.cost = {
@@ -102,7 +128,7 @@ export function ConfigurationModal({
       console.error("Error saving configuration:", error);
       setError("Error saving configuration. Please try again.");
     }
-  }, [config, costData, onSave, onClose]);
+  }, [formData, costData, onSave, onClose]);
 
   const handleTemplateSelect = useCallback(
     (provider: string, model: string): void => {
@@ -128,7 +154,7 @@ export function ConfigurationModal({
 
       const readableName = `${provider.charAt(0).toUpperCase() + provider.slice(1)} ${model}`;
 
-      setConfig({
+      setFormData({
         ...modelConfig,
         name: readableName,
         provider,
@@ -168,39 +194,39 @@ export function ConfigurationModal({
     (value: string) => {
       setSelectedProvider(value);
       setSelectedModel("");
-      setConfig({
-        ...config,
+      setFormData({
+        ...formData,
         provider: value === "other" ? "" : value,
         model: "",
       });
       setCustomProvider("");
     },
-    [config],
+    [formData],
   );
 
   const handleModelChange = useCallback(
     (value: string) => {
       setSelectedModel(value);
-      setConfig({ ...config, model: value === "other" ? "" : value });
+      setFormData({ ...formData, model: value === "other" ? "" : value });
       setCustomModel("");
     },
-    [config],
+    [formData],
   );
 
   const handleCustomProviderChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       setCustomProvider(e.target.value);
-      setConfig({ ...config, provider: e.target.value });
+      setFormData({ ...formData, provider: e.target.value });
     },
-    [config],
+    [formData],
   );
 
   const handleCustomModelChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       setCustomModel(e.target.value);
-      setConfig({ ...config, model: e.target.value });
+      setFormData({ ...formData, model: e.target.value });
     },
-    [config],
+    [formData],
   );
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -226,7 +252,7 @@ export function ConfigurationModal({
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
-        <div className="grid max-h-[60vh] gap-4 overflow-y-auto py-4">
+        <div className="grid max-h-[70vh] gap-4 overflow-y-auto py-4">
           {!initialConfig && (
             <div className="mt-4">
               <Label>Templates</Label>
@@ -241,8 +267,10 @@ export function ConfigurationModal({
             </Label>
             <Input
               id="name"
-              value={config.name || ""}
-              onChange={(e) => setConfig({ ...config, name: e.target.value })}
+              value={formData.name || ""}
+              onChange={(e) =>
+                setFormData({ ...formData, name: e.target.value })
+              }
               className="col-span-3"
             />
           </div>

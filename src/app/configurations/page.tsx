@@ -252,7 +252,7 @@ export default function ConfigurationsPage() {
           setEditingConfig(null);
         }}
         onSave={handleEditConfig}
-        initialConfig={editingConfig || undefined}
+        initialConfig={editingConfig as AIConfiguration}
         title="Edit Configuration"
       />
     </div>
