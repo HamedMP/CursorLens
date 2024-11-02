@@ -156,9 +156,7 @@ export async function POST(
     const logEntry = {
       method: "POST",
       url: `/api/${endpoint}`,
-      headers: JSON.stringify(
-        maskSensitiveHeaders(Object.fromEntries(request.headers)),
-      ),
+      headers: maskSensitiveHeaders(Object.fromEntries(request.headers)),
       body: {
         ...body,
         ...streamTextOptions,
