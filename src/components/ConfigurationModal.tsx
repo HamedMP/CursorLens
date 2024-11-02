@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -49,6 +49,35 @@ export function ConfigurationModal({
     () => getModelConfigurations(),
     [],
   );
+  const [costData, setCostData] = useState({
+    inputTokenCost: "",
+    outputTokenCost: "",
+  });
+
+  useEffect(() => {
+    const fetchCostData = async () => {
+      if (config.provider && config.model) {
+        try {
+          const response = await fetch(
+            `/api/costs/current?provider=${config.provider}&model=${config.model}`,
+          );
+          if (response.ok) {
+            const data = await response.json();
+            if (data) {
+              setCostData({
+                inputTokenCost: data.inputTokenCost.toString(),
+                outputTokenCost: data.outputTokenCost.toString(),
+              });
+            }
+          }
+        } catch (error) {
+          console.error("Error fetching cost data:", error);
+        }
+      }
+    };
+
+    fetchCostData();
+  }, [config.provider, config.model]);
 
   const handleSave = useCallback(async () => {
     if (!config.name || !config.provider || !config.model) {
@@ -56,14 +85,24 @@ export function ConfigurationModal({
       return;
     }
 
+    const configToSave = { ...config };
+
+    if (costData.inputTokenCost && costData.outputTokenCost) {
+      configToSave.cost = {
+        inputTokenCost: parseFloat(costData.inputTokenCost),
+        outputTokenCost: parseFloat(costData.outputTokenCost),
+        validFrom: new Date(),
+      };
+    }
+
     try {
-      await onSave(config);
+      await onSave(configToSave);
       onClose();
     } catch (error) {
       console.error("Error saving configuration:", error);
       setError("Error saving configuration. Please try again.");
     }
-  }, [config, onSave, onClose]);
+  }, [config, costData, onSave, onClose]);
 
   const handleTemplateSelect = useCallback(
     (provider: string, model: string): void => {
@@ -164,6 +203,23 @@ export function ConfigurationModal({
     [config],
   );
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const configData = {
+      /* existing config data */
+    };
+
+    if (costData.inputTokenCost && costData.outputTokenCost) {
+      configData.cost = {
+        inputTokenCost: parseFloat(costData.inputTokenCost),
+        outputTokenCost: parseFloat(costData.outputTokenCost),
+        validFrom: new Date(),
+      };
+    }
+
+    onSave(configData);
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[475px]">
@@ -255,6 +311,60 @@ export function ConfigurationModal({
                 />
               )}
             </div>
+          </div>
+          <div className="space-y-4">
+            <h4 className="font-medium">
+              Cost Configuration (USD per million tokens)
+            </h4>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="inputTokenCost">
+                  Input Token Cost
+                  <span className="ml-1 text-xs text-muted-foreground">
+                    (per 1M tokens)
+                  </span>
+                </Label>
+                <Input
+                  id="inputTokenCost"
+                  type="number"
+                  step="0.01"
+                  value={costData.inputTokenCost}
+                  onChange={(e) =>
+                    setCostData({
+                      ...costData,
+                      inputTokenCost: e.target.value,
+                    })
+                  }
+                  placeholder="e.g., 0.50"
+                />
+              </div>
+              <div>
+                <Label htmlFor="outputTokenCost">
+                  Output Token Cost
+                  <span className="ml-1 text-xs text-muted-foreground">
+                    (per 1M tokens)
+                  </span>
+                </Label>
+                <Input
+                  id="outputTokenCost"
+                  type="number"
+                  step="0.01"
+                  value={costData.outputTokenCost}
+                  onChange={(e) =>
+                    setCostData({
+                      ...costData,
+                      outputTokenCost: e.target.value,
+                    })
+                  }
+                  placeholder="e.g., 1.50"
+                />
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Note: Current costs for this provider/model combination are shown
+              if available. Leave fields unchanged to keep using the current
+              cost configuration.
+            </p>
           </div>
           {error && (
             <div className="mb-4 mt-2 text-sm text-red-500">{error}</div>

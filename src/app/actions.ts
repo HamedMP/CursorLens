@@ -9,7 +9,6 @@ function serializeDates<T>(obj: T): T {
   return JSON.parse(JSON.stringify(obj));
 }
 
-// Add the metadata type definition
 type LogMetadata = {
   topP: number;
   model: string;
@@ -327,5 +326,20 @@ export async function setDefaultConfiguration(configId: string): Promise<void> {
   } catch (error) {
     console.error("Error setting default configuration:", error);
     throw error;
+  }
+}
+
+export async function deleteLogs(logIds: string[]): Promise<void> {
+  try {
+    await prisma.log.deleteMany({
+      where: {
+        id: {
+          in: logIds,
+        },
+      },
+    });
+  } catch (error) {
+    console.error("Error deleting logs:", error);
+    throw new Error("Failed to delete logs");
   }
 }

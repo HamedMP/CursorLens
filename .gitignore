@@ -37,3 +37,6 @@ next-env.d.ts
 
 .env
 certificates
+
+# postgres
+postgres_data

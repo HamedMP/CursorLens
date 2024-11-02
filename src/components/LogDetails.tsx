@@ -349,6 +349,22 @@ export default function LogDetails({ logId }: LogDetailsProps) {
         </h3>
         <p className="mb-4 text-sm text-gray-500">{log.timestamp}</p>
 
+        {log.metadata.error && (
+          <Alert variant="destructive" className="mb-4">
+            <AlertDescription>
+              Error: {log.metadata.error}
+              {log.metadata.stack && (
+                <details className="mt-2">
+                  <summary>Stack trace</summary>
+                  <pre className="mt-2 whitespace-pre-wrap text-xs">
+                    {log.metadata.stack}
+                  </pre>
+                </details>
+              )}
+            </AlertDescription>
+          </Alert>
+        )}
+
         {renderUsageTable(log)}
 
         <Card className="mt-4">

@@ -1,7 +1,13 @@
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
+import { useState, useEffect } from "react";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+  CardDescription,
+} from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -13,8 +19,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
 import LogsList from "../components/LogsList";
+import { Label } from "@/components/ui/label";
 import { Log } from "../types/logs";
 import {
   createConfiguration,
@@ -23,6 +29,7 @@ import {
   getStats,
   updateDefaultConfiguration,
 } from "./actions";
+import { Button } from "@/components/ui/button";
 
 interface Stats {
   totalLogs: number;
@@ -44,6 +51,12 @@ interface AIConfiguration {
   updatedAt: Date;
 }
 
+interface TunnelInfo {
+  url: string | null;
+  error: string | null;
+  tunnels?: string[];
+}
+
 export default function Home() {
   const [logs, setLogs] = useState<Log[]>([]);
   const [stats, setStats] = useState<Stats>({ totalLogs: 0, totalTokens: 0 });
@@ -58,6 +71,11 @@ export default function Home() {
   const [newConfigModel, setNewConfigModel] = useState("");
   const [newConfigProvider, setNewConfigProvider] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [tunnelInfo, setTunnelInfo] = useState<TunnelInfo>({
+    url: null,
+    error: null,
+    tunnels: [],
+  });
 
   useEffect(() => {
     const fetchData = async () => {
@@ -130,6 +148,38 @@ export default function Home() {
     router.push(`/logs?selectedLogId=${logId}`);
   };
 
+  const startTunnel = async () => {
+    try {
+      const response = await fetch("/api/tunnel", {
+        method: "POST",
+      });
+      const data = await response.json();
+
+      if (!response.ok) throw new Error(data.error);
+
+      setTunnelInfo({ url: data.url, error: null });
+    } catch (err: any) {
+      setTunnelInfo({ url: null, error: err.message });
+    }
+  };
+
+  const fetchTunnels = async () => {
+    try {
+      const response = await fetch("/api/tunnel");
+      const data = await response.json();
+
+      if (!response.ok) throw new Error(data.error);
+
+      setTunnelInfo((prev) => ({ ...prev, tunnels: data.tunnels }));
+    } catch (err: any) {
+      setTunnelInfo((prev) => ({ ...prev, error: err.message }));
+    }
+  };
+
+  useEffect(() => {
+    fetchTunnels();
+  }, []);
+
   if (loading)
     return (
       <div className="mx-auto flex w-full max-w-4xl flex-col items-center justify-start space-y-8 p-12">
@@ -179,6 +229,68 @@ export default function Home() {
       >
         <path d="M4.037 4.688a.495.495 0 0 1 .651-.651l16 6.5a.5.5 0 0 1-.063.947l-6.124 1.58a2 2 0 0 0-1.438 1.435l-1.579 6.126a.5.5 0 0 1-.947.063z" />
       </svg>
+
+      <Card className="mb-8 w-full max-w-4xl">
+        <CardHeader>
+          <CardTitle>CursorLens Connection</CardTitle>
+          <CardDescription>
+            Set up a secure tunnel to connect Cursor with CursorLens
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <h4 className="text-sm font-medium">Tunnel Status</h4>
+                <p className="text-sm text-muted-foreground">
+                  {tunnelInfo.tunnels?.length
+                    ? `${tunnelInfo.tunnels.length} active tunnel${tunnelInfo.tunnels.length > 1 ? "s" : ""}`
+                    : "No active tunnels"}
+                </p>
+              </div>
+              <Button onClick={startTunnel} disabled={!!tunnelInfo.url}>
+                {tunnelInfo.url ? "Tunnel Active" : "Start Tunnel"}
+              </Button>
+            </div>
+
+            {tunnelInfo.error && (
+              <div className="rounded-md bg-destructive/15 p-3 text-sm text-destructive">
+                {tunnelInfo.error}
+              </div>
+            )}
+
+            {tunnelInfo.tunnels && tunnelInfo.tunnels.length > 0 && (
+              <div className="rounded-md border p-4">
+                <div className="space-y-3">
+                  {tunnelInfo.tunnels.map((tunnel, index) => (
+                    <div
+                      key={tunnel}
+                      className="flex items-center justify-between"
+                    >
+                      <code className="rounded bg-muted px-2 py-1 text-sm">
+                        {tunnel}
+                      </code>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => navigator.clipboard.writeText(tunnel)}
+                      >
+                        Copy
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="mt-2 text-sm text-muted-foreground">
+              <p>
+                Use any of these URLs in Cursor&apos;s OpenAI Base URL setting
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="mb-8 grid w-full max-w-4xl grid-cols-1 gap-6 md:grid-cols-2">
         <Card>
@@ -241,6 +353,7 @@ export default function Home() {
               logs={logs}
               onLogSelect={handleLogSelect}
               selectedLogId={undefined}
+              onLogsDeleted={() => {}}
             />
           </div>
           <Link

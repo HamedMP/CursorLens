@@ -41,6 +41,8 @@ import {
   type ModelConfigurations,
 } from "@/lib/model-config";
 import { ConfigurationModal } from "@/components/ConfigurationModal";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { CostConfigurationTab } from "@/components/CostConfigurationTab";
 
 interface AIConfiguration {
   id: string;
@@ -159,69 +161,82 @@ export default function ConfigurationsPage() {
     <div className="container mx-auto p-8">
       <h1 className="mb-8 text-3xl font-bold">AI Configurations</h1>
 
-      <Card className="mb-8">
-        <CardHeader>
-          <CardTitle>Configuration List</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Provider</TableHead>
-                <TableHead>Model</TableHead>
-                <TableHead>Temperature</TableHead>
-                <TableHead>Max Tokens</TableHead>
-                <TableHead>Default</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {sortedConfigurations.map((config) => (
-                <TableRow key={config.id}>
-                  <TableCell>{config.name}</TableCell>
-                  <TableCell>{config.provider}</TableCell>
-                  <TableCell>{config.model}</TableCell>
-                  <TableCell>{config.temperature}</TableCell>
-                  <TableCell>{config.maxTokens}</TableCell>
-                  <TableCell>
-                    <Switch
-                      checked={config.isDefault}
-                      onCheckedChange={(checked) =>
-                        handleToggleDefault(config.id, checked)
-                      }
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex space-x-2">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => openEditModal(config)}
-                      >
-                        <PencilIcon className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleDeleteConfig(config.id)}
-                        disabled={config.isDefault}
-                      >
-                        <Trash2Icon className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+      <Tabs defaultValue="configurations" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="configurations">Configurations</TabsTrigger>
+          <TabsTrigger value="costs">Cost Management</TabsTrigger>
+        </TabsList>
 
-      <Button onClick={() => setIsAddModalOpen(true)}>
-        <PlusIcon className="mr-2 h-4 w-4" />
-        Add Configuration
-      </Button>
+        <TabsContent value="configurations">
+          <Card className="mb-8">
+            <CardHeader>
+              <CardTitle>Configuration List</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Provider</TableHead>
+                    <TableHead>Model</TableHead>
+                    <TableHead>Temperature</TableHead>
+                    <TableHead>Max Tokens</TableHead>
+                    <TableHead>Default</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {sortedConfigurations.map((config) => (
+                    <TableRow key={config.id}>
+                      <TableCell>{config.name}</TableCell>
+                      <TableCell>{config.provider}</TableCell>
+                      <TableCell>{config.model}</TableCell>
+                      <TableCell>{config.temperature}</TableCell>
+                      <TableCell>{config.maxTokens}</TableCell>
+                      <TableCell>
+                        <Switch
+                          checked={config.isDefault}
+                          onCheckedChange={(checked) =>
+                            handleToggleDefault(config.id, checked)
+                          }
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex space-x-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => openEditModal(config)}
+                          >
+                            <PencilIcon className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDeleteConfig(config.id)}
+                            disabled={config.isDefault}
+                          >
+                            <Trash2Icon className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+
+          <Button onClick={() => setIsAddModalOpen(true)}>
+            <PlusIcon className="mr-2 h-4 w-4" />
+            Add Configuration
+          </Button>
+        </TabsContent>
+
+        <TabsContent value="costs">
+          <CostConfigurationTab />
+        </TabsContent>
+      </Tabs>
 
       <ConfigurationModal
         isOpen={isAddModalOpen}

@@ -18,6 +18,23 @@ const openaiClient = new OpenAI({
 // Allow streaming responses up to 30 seconds
 export const maxDuration = 30;
 
+const maskSensitiveHeaders = (headers: Record<string, string>) => {
+  const sensitiveKeys = ["authorization", "api-key", "secret"];
+  const maskedHeaders = { ...headers };
+
+  Object.keys(maskedHeaders).forEach((key) => {
+    if (
+      sensitiveKeys.some((sensitiveKey) =>
+        key.toLowerCase().includes(sensitiveKey),
+      )
+    ) {
+      maskedHeaders[key] = "************************";
+    }
+  });
+
+  return maskedHeaders;
+};
+
 async function getAIModelClient(provider: string, model: string) {
   switch (provider.toLowerCase()) {
     case "openai":
@@ -139,7 +156,9 @@ export async function POST(
     const logEntry = {
       method: "POST",
       url: `/api/${endpoint}`,
-      headers: Object.fromEntries(request.headers),
+      headers: JSON.stringify(
+        maskSensitiveHeaders(Object.fromEntries(request.headers)),
+      ),
       body: {
         ...body,
         ...streamTextOptions,
@@ -181,9 +200,12 @@ export async function POST(
           const totalTokens = usage?.totalTokens ?? 0;
 
           const modelCost = await getModelCost(provider, model);
-          const inputCost = (inputTokens / 1000000) * modelCost.inputTokenCost;
-          const outputCost =
-            (outputTokens / 1000000) * modelCost.outputTokenCost;
+          const inputCost = modelCost
+            ? (inputTokens / 1000000) * modelCost.inputTokenCost
+            : 0;
+          const outputCost = modelCost
+            ? (outputTokens / 1000000) * modelCost.outputTokenCost
+            : 0;
           const totalCost = inputCost + outputCost;
 
           logEntry.response = {
@@ -251,8 +273,8 @@ export async function POST(
     const totalTokens = result.usage?.totalTokens ?? 0;
 
     const modelCost = await getModelCost(provider, model);
-    const inputCost = inputTokens * modelCost.inputTokenCost;
-    const outputCost = outputTokens * modelCost.outputTokenCost;
+    const inputCost = modelCost ? inputTokens * modelCost.inputTokenCost : 0;
+    const outputCost = modelCost ? outputTokens * modelCost.outputTokenCost : 0;
     const totalCost = inputCost + outputCost;
 
     logEntry.response = result;
@@ -274,9 +296,11 @@ export async function POST(
     const errorLogEntry = {
       method: "POST",
       url: `/api/${endpoint}`,
-      headers: Object.fromEntries(request.headers),
-      body: body,
-      response: { error: errorMessage },
+      headers: JSON.stringify(
+        maskSensitiveHeaders(Object.fromEntries(request.headers)),
+      ),
+      body: JSON.stringify(body),
+      response: JSON.stringify({ error: errorMessage }),
       timestamp: new Date(),
       metadata: {
         error: errorMessage,

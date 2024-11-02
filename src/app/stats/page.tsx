@@ -1,7 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+  CardDescription,
+} from "@/components/ui/card";
 import { getStats, getConfigurations, getConfigurationCosts } from "../actions";
 import type { AIConfiguration } from "@prisma/client";
 import {
@@ -223,14 +229,21 @@ export default function StatsPage() {
     }),
   );
 
+  const COLORS = [
+    "hsl(var(--chart-1))", // Blue
+    "hsl(var(--chart-2))", // Green
+    "hsl(var(--chart-3))", // Yellow
+    "hsl(var(--chart-4))", // Orange
+    "hsl(var(--chart-5))", // Purple
+  ];
+
   const pieChartData = Object.entries(stats.perModelProviderStats).map(
-    ([key, data]) => ({
+    ([key, data], index) => ({
       name: key,
       value: data.logs,
+      fill: COLORS[index % COLORS.length],
     }),
   );
-
-  const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884D8"];
 
   return (
     <div className="container mx-auto p-8">
@@ -419,36 +432,34 @@ export default function StatsPage() {
       </Card>
 
       <Card className="mb-8">
-        <CardHeader>
+        <CardHeader className="items-center pb-0">
           <CardTitle>Model and Provider Usage Distribution</CardTitle>
+          <CardDescription>
+            Distribution of API calls across models
+          </CardDescription>
         </CardHeader>
-        <CardContent>
-          <ChartContainer config={chartConfig} className="h-[400px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={pieChartData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={true}
-                  outerRadius={150}
-                  fill="#8884d8"
-                  dataKey="value"
-                  label={({ name, percent }) =>
-                    `${name} ${(percent * 100).toFixed(0)}%`
-                  }
-                >
-                  {pieChartData.map((entry) => (
-                    <Cell
-                      key={entry.name}
-                      fill={COLORS[pieChartData.indexOf(entry) % COLORS.length]}
-                    />
-                  ))}
-                </Pie>
-                <ChartTooltip content={<ChartTooltipContent />} />
-                <ChartLegend content={<ChartLegendContent />} />
-              </PieChart>
-            </ResponsiveContainer>
+        <CardContent className="flex-1 pb-0">
+          <ChartContainer
+            config={chartConfig}
+            className="mx-auto aspect-square max-h-[400px]"
+          >
+            <PieChart>
+              <Pie
+                data={pieChartData}
+                dataKey="value"
+                nameKey="name"
+                cx="50%"
+                cy="50%"
+                outerRadius={150}
+                label={({ name, value, percent }) =>
+                  `${name.split(":")[1]} (${(percent * 100).toFixed(0)}%)`
+                }
+              />
+              <ChartLegend
+                content={<ChartLegendContent nameKey="name" />}
+                className="-translate-y-2 flex-wrap gap-2 [&>*]:basis-1/4 [&>*]:justify-center"
+              />
+            </PieChart>
           </ChartContainer>
         </CardContent>
       </Card>

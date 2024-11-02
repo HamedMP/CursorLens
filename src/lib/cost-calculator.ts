@@ -15,7 +15,13 @@ export async function getModelCost(provider: string, model: string) {
   });
 
   if (!modelCost) {
-    throw new Error(`No cost data found for ${provider} ${model}`);
+    console.warn(
+      `No cost data found for ${provider} ${model}, using zero cost`,
+    );
+    return {
+      inputTokenCost: 0,
+      outputTokenCost: 0,
+    };
   }
 
   return modelCost;

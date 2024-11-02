@@ -34,9 +34,9 @@ For detailed installation instructions, please refer to our [Installation Guide]
 - Node.js (v14 or later)
 - pnpm
 - PostgreSQL
-- ngrok
+- Docker and Docker Compose (optional)
 
-### Quick Installation Steps
+### Option 1: Running with Docker
 
 1. Clone the repository
 2. Install dependencies with `pnpm install`
@@ -47,6 +47,63 @@ For detailed installation instructions, please refer to our [Installation Guide]
 7. Configure Cursor to use your ngrok URL as the API endpoint
 
 For full details on each step, please see the [Installation Guide](https://www.cursorlens.com/docs/getting-started/installation).
+
+### Option 2: Running Locally
+
+1. Clone the repository and install dependencies
+
+```bash
+git clone https://github.com/yourusername/cursor-lens.git
+cd cursor-lens
+pnpm install
+```
+
+2. Copy the example environment file and configure it
+
+```bash
+cp .env.example .env
+```
+
+3. Set up the database
+
+```bash
+pnpm prisma migrate dev
+pnpm prisma db seed
+```
+
+4. Start the development server
+
+```bash
+pnpm dev
+```
+
+5. In a separate terminal, start localtunnel
+
+```bash
+npx localtunnel --port 3000
+```
+
+### Configuration
+
+1. Configure your `.env` file:
+
+```plaintext
+# Database
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/postgres
+
+# AI Provider Keys (at least one is required)
+OPENAI_API_KEY=your_openai_api_key_here
+ANTHROPIC_API_KEY=your_anthropic_api_key_here
+COHERE_API_KEY=your_cohere_api_key_here
+MISTRAL_API_KEY=your_mistral_api_key_here
+GROQ_API_KEY=your_groq_api_key_here
+
+2. The tunnel URL will be displayed in the dashboard. Use this URL in Cursor's settings:
+   - Open Cursor Settings
+   - Search for "OpenAI Base URL"
+   - Paste your tunnel URL
+   - Save settings
+
 
 ## Usage
 
@@ -73,6 +130,24 @@ For full details on each step, please see the [Installation Guide](https://www.c
 ![Example Cache read response](public/ant-cache-read.png)
 
 # Releases
+
+## [0.1.3] - 2024-11-02
+
+### Added
+
+- Improved cost calculation system with better error handling
+- Combined seed and cost update scripts for easier maintenance
+- Detailed logging for cost updates and seeding operations
+
+### Changed
+
+- Simplified database seeding process - now one command handles both model costs and log updates
+- Better error handling for edge cases in cost calculations
+- More detailed console output during seeding operations
+
+### How to Update
+
+Run the following command to update your installation:
 
 ## Nightly - 2024-08-24
 
@@ -146,3 +221,4 @@ For more detailed information, please visit our [documentation](https://www.curs
 ---
 
 Happy coding with Cursor Lens!
+```

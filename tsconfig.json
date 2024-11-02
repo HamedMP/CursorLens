@@ -20,12 +20,16 @@
     "paths": {
       "@/*": ["./src/*"]
     },
-    "types": ["vitest/globals", "vite/client"]
+    "types": ["vitest/globals", "vite/client"],
+    "target": "ES2017"
   },
   "include": [
     "next-env.d.ts",
+
     "**/*.ts",
+
     "**/*.tsx",
+
     ".next/types/**/*.ts",
     "vitest.config.mts"
   ],

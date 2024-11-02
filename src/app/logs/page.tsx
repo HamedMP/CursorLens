@@ -197,6 +197,7 @@ export default function Logs() {
                 logs={logs}
                 onLogSelect={handleLogSelect}
                 selectedLogId={selectedLogId}
+                onLogsDeleted={handleRefresh}
               />
             ) : (
               <p className="p-4">No logs found.</p>
