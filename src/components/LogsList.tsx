@@ -166,8 +166,9 @@ const LogsListComponent: React.FC<LogsListProps> = ({
         const totalTokens = log.metadata.totalTokens || 0;
         const totalCost = log.metadata.totalCost || 0;
         const firstUserMessage =
-          log.body?.messages?.find((m) => m.role === "user" && !("name" in m))
-            ?.content || "No message available";
+          log.body?.messages?.findLast(
+            (m) => m.role === "user" && !("name" in m),
+          )?.content || "No message available";
         const truncatedMessage =
           firstUserMessage.slice(0, 100) +
           (firstUserMessage.length > 100 ? "..." : "");
